@@ -11,8 +11,7 @@ class TextualClaimGenerator(PipelineElement):
         return
 
     @abstractmethod
-    def generate(self,
-            evidence: [list[Evidence]]):
+    def generate(self, evidence):
         '''
         Generate textual claims based on evidence
 

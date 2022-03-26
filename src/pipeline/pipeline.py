@@ -18,8 +18,7 @@ class ClaimGeneratorPipeline:
     Runs a claim generation task starting from raw data all the way to textual claims.
     Pipeline is made of PipelineElements that are run in sequence. An element output is the input of the next.
     '''
-    def __init__(self,
-            elements: [PipelineElement]):
+    def __init__(self, elements):
         self.elements = elements
 
     @abstractmethod

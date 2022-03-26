@@ -13,8 +13,7 @@ class EvidenceRetriever(PipelineElement):
         self.n_pieces = n_pieces
 
     @abstractmethod
-    def retrieve(self,
-            data):
+    def retrieve(self, data):
         '''
         Scans data and returns a list of Evidence objects
 
