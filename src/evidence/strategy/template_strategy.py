@@ -1,0 +1,2 @@
+class TemplateStrategy():
+    pass

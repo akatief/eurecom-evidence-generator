@@ -1,0 +1,2 @@
+class RandomStrategy():
+    pass

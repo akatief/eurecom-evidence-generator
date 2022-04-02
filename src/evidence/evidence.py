@@ -1,32 +1,35 @@
 class EvidencePiece:
-    '''
+    """
     Contains a single piece of information pertaining to some Evidence.
-    '''
-    def __init__(self,wikipage, cell, header_cell):
+    """
+
+    def __init__(self, wikipage, cell, header_cell):
         '''
         cell id => cell_<table_id>_<row_num>_<column_num>
         '''
         self.wiki_page = wikipage
-        self.cell_id = cell.name 
-        self.table = cell.name.split('_')[1] 
-        self.row = cell.name.split('_')[2] 
-        self.column = cell.name.split('_')[3] 
+        self.cell_id = cell.name
+        self.table = cell.name.split('_')[1]
+        self.row = cell.name.split('_')[2]
+        self.column = cell.name.split('_')[3]
         self.header = header_cell
 
         # Added for the links in the table
         content = cell.content
-        if len(content.split('|'))>1:
-            content = content.split('|')[1][:-2] 
+        if len(content.split('|')) > 1:
+            content = content.split('|')[1][:-2]
         self.content = content
+
 
 class Evidence:
     '''
     Contains pieces of evidence along with the template giving meaning.
     '''
+
     def __init__(self,
                  evidence_pieces,
                  num_evidence,
-                 table_per_page, 
+                 table_per_page,
                  evidence_per_table,
                  column_per_table,
                  seed):

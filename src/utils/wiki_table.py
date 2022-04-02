@@ -91,7 +91,7 @@ class WikiTable(WikiElement):
     def joint_repr(self):
         return  '\n'.join([row.joint_repr() for row in self.rows])
 
-    def get_cell_row(cell_id):
+    def get_cell_row(self, cell_id):
         for i,row in enumerate(self.rows):
             if cell_id in row.id_content_map:
                 return row

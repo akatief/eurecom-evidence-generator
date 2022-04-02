@@ -1,0 +1,8 @@
+
+data_path: ${hydra:runtime.cwd}\data\filtereddb4.db
+num_evidence: 2
+n_pieces: 1
+table_per_page: 1
+evidence_per_table: 1
+column_per_table: 2
+seed: 42
