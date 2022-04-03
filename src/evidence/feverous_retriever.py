@@ -27,6 +27,12 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
                  seed=None):
         """
         :param p_dataset: path of the dataset
+        :param num_evidence: how many Evidences you want to get
+        :param n_pieces: ?
+        :param table_per_page: how many tables per page you want to scan
+        :param evidence_per_table: how many Evidences from the same table
+        :param column_per_table: how many cells for 1 Evidence
+        :param seed: used for reproducibility
         """
         super().__init__(n_pieces=num_evidence)
 
@@ -41,11 +47,30 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
         self.column_per_table = column_per_table
         self.seed = seed
 
-    def retrieve(self,
-                 data):
+    def retrieve(
+            self
+    ) -> list[Evidence]:
         """
         Scans whole FEVEROUS dataset and returns list of Evidence objects.
         It extracts a number of evidence specified by num_evidence.
+
+        Each Evidence is composed of number of columns. columns Evidence Pieces
+
+        Example:
+            [
+                Evidence(
+                    EvidencePiece('Totti', 'name'),
+                    EvidencePiece(128, 'scored_gol)
+                    "SUPPORTS"
+                ),
+                Evidence(
+                    EvidencePiece('Cassano', 'name'),
+                    EvidencePiece(128, 'scored_gol)
+                    "REFUTED"
+                ),
+                ...
+            ]
+
 
         1.0 shuffle the wikipedia pages
             1.1 filter out the wikipedia pages with num_table < table_per_page.
@@ -55,17 +80,15 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
             2.1 randomly select #table_per_page from the available tables
             2.2 extract the #num_evidence evidences
 
-        :param data: data to retrieve evidence from
-
         :return: a list of Evidence objects
         """
         # Random generator for reproducibility purposes
         rng = np.random.default_rng(self.seed)
         rng.shuffle(self.ids)
 
-        # TODO: to shuffle or not to shuffle?
+        # TODO: to shuffle or not to shuffle the ids?
         discarded_ids = []
-        tbl_evidences = []
+        total_evidences = []
         for id in self.ids[:]:
             # retrieve the page
             page_json = self.db.get_doc_json(id)
@@ -84,37 +107,63 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
             rng.shuffle(tables)
 
             # for each table in wiki_page
-            for tbl in tables:
+            for i, tbl in enumerate(tables):
                 # print(tbl)
                 # get the left indexes
+                if i >= self.table_per_page:
+                    break
 
                 # TODO possible bug: check what happen with multiple row
                 header_left, table_len = self.get_index(tbl)
-                output = self.get_evidence(tbl,
-                                           header_left,
-                                           table_len,
-                                           self.column_per_table,
-                                           self.evidence_per_table,
-                                           rng=rng)
+                evidence_from_table = self.get_evidence_from_table(tbl,
+                                                                   header_left,
+                                                                   table_len,
+                                                                   rng=rng)
 
-                if output is not None:
-                    tbl_evidences.append(Evidence(output,
-                                                  len(output),
-                                                  self.table_per_page,
-                                                  self.evidence_per_table,
-                                                  self.column_per_table,
-                                                  self.seed))
+                if evidence_from_table is not None:
+                    for e in self.create_positive_evidence(evidence_from_table):
+                        total_evidences.append(e)
+
                 else:
                     discarded_ids.append(id)
 
-            if len(tbl_evidences) >= self.num_evidence:
+            if len(total_evidences) == self.num_evidence:
                 break
+            if len(total_evidences) > self.num_evidence:
+                total_evidences = total_evidences[:self.num_evidence]
 
-        # TODO bug: more evidence than necessary
-        print(f"Evidences retrieved {len(tbl_evidences)}/{self.num_evidence}")
-        print(f"Id not usede {len(discarded_ids)}/{len(self.ids)}")
+        print(f"Evidences retrieved {len(total_evidences)}/{self.num_evidence}")
+        print(f"Id not used {len(discarded_ids)}/{len(self.ids)}")
 
-        return tbl_evidences
+        return total_evidences
+
+    def create_positive_evidence(self,
+                                 evidence_from_table: list[list[EvidencePiece]],
+                                 ) -> list[Evidence]:
+        """
+        It takes as argument the List of EvidencePieces created from a specific table.
+        It returns the list of Evidence object created from each set of EvidencePieces.
+
+        :param evidence_from_table: each element is [EvidencePiece] got from the table
+
+        :return positive_evidences: list containing the positive Evidence
+        """
+        positive_evidences = []
+        for evidence_piece in evidence_from_table:
+            positive_evidences.append(
+                Evidence(
+                    evidence_piece,
+                    self.column_per_table,
+                    "SUPPORTS",
+                    self.seed
+                )
+            )
+
+        return positive_evidences
+
+    def create_negative_evidence(self):
+        # TODO: implement_negative_evidence
+        pass
 
     def get_index(self,
                   tbl: WikiTable
@@ -141,21 +190,38 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
                 if first_cell.is_header:
                     # (header_cell_id, row_number)
                     header_index.append(
-                        (first_cell.name, row.row_num, first_cell.content))
+                        (first_cell.name, int(row.row_num), first_cell.content))
 
         return header_index, count
 
     @abstractmethod
-    def get_evidence(self,
-                     tbl: WikiTable,
-                     header_left,
-                     table_len: int,
-                     if_header=True,
-                     rng=None) -> list[EvidencePiece]:
+    def get_evidence_from_table(self,
+                                tbl: WikiTable,
+                                header_left: list[tuple[str, int, str]],
+                                table_len: int,
+                                if_header=True,
+                                rng=None) -> list[list[EvidencePiece]]:
+        """
+        it is used to extract the "meaningful" attributes from one table at time.
+        "Meaningful" is defined by the target application.
+
+        Example:
+        evidences =
+            [
+                [
+                    EvidencePiece('Totti', 'name'),
+                    EvidencePiece(128, 'scored_gol)
+                ],
+                [
+                    ...
+                ],
+                ...
+            ]
+
+        :param tbl: scanned table WikiTable
+        :param header_left: list of tuple. Each element contains the first left header
+        :param table_len: number of row in the table, scalar
+        :param if_header: add or not add the header in the output Boolean
+        :param rng: Random numpy generator
+        """
         pass
-
-
-
-
-
-

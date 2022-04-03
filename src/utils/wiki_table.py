@@ -24,7 +24,7 @@ class WikiTable(WikiElement):
         self.caption = table_json['caption'] if 'caption' in table_json else ''
         self.caption_id = 'table_caption_' + self.name.split('_')[-1]
         self.type = table_json['type']
-        self.rows = [Row(row, i, self.page) for i,row in enumerate(self.table)]
+        self.rows = [Row(row, i, self.page) for i, row in enumerate(self.table)]
         self.header_rows = [row for row in self.rows if row.is_header_row()==True]
         self.cell_ids = [row.cell_ids for row in self.rows]
         self.cell_ids = list(itertools.chain(*self.cell_ids))

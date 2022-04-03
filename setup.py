@@ -10,8 +10,8 @@ with open("requirements.txt") as f:
 setuptools.setup(
     name="evidence-generator",
     version="0.0.1",
-    author="Federico Tiblias",
-    author_email="f.tib29@gmail.com",
+    author="Federico Tiblias & Simone Papicchio",
+    author_email="f.tib29@gmail.com & simone.papicchio@protonmail.com",
     description="An evidence extraction pipeline from tabular data.",
     long_description=long_description,
     long_description_content_type="text/markdown",

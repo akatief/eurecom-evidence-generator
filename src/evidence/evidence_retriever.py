@@ -16,15 +16,14 @@ class EvidenceRetriever(PipelineElement):
         self.n_pieces = n_pieces
 
     @abstractmethod
-    def retrieve(self, data):
+    def retrieve(self):
         """
         Scans data and returns a list of Evidence objects
 
-        :param data: data to retrieve evidence from
         :return: a list of Evidence objects
         """
 
         raise NotImplementedError("Must have implemented this.")
 
-    def __call__(self, data):
-        return self.retrieve(data)
+    def __call__(self):
+        return self.retrieve()
