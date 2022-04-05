@@ -1,39 +1,14 @@
-from typing import Any, Optional, Tuple, List
-from xmlrpc.client import boolean
-
-import hydra
 import numpy as np
 from numpy import ndarray
 
-from database import FeverousDB
-from evidence import EvidencePiece
-from feverous_retriever import FEVEROUSRetriever
-from utils import WikiPage, WikiTable
-from utils.wiki_table import Cell
+
+from ..evidence import EvidencePiece
+from . import FeverousRetriever
+from ..utils import WikiTable
+from ..utils.wiki_table import Cell
 
 
-class FeverousRandomRetriever(FEVEROUSRetriever):
-
-    def __init__(self,
-                 p_dataset,
-                 num_evidence,
-                 n_pieces,
-                 table_per_page=1,
-                 evidence_per_table=1,
-                 column_per_table=2,
-                 seed=None):
-        super().__init__(
-            p_dataset,
-            num_evidence,
-            n_pieces,
-            table_per_page,
-            evidence_per_table,
-            column_per_table,
-            seed)
-
-    def retrieve(self):
-        return super().retrieve()
-
+class FeverousRandomRetriever(FeverousRetriever):
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
                                 header_left: list[tuple[str, int, str]],
@@ -104,7 +79,7 @@ class FeverousRandomRetriever(FEVEROUSRetriever):
                         tbl: WikiTable,
                         header_left: list[tuple[str, int, str]],
                         table_len: int,
-                        if_header: boolean,
+                        if_header: bool,
                         rng: np.random.Generator
                         ) -> tuple[list[list[Cell]], list[str]]:
         """
@@ -147,7 +122,7 @@ class FeverousRandomRetriever(FEVEROUSRetriever):
                          tbl_id: int,
                          table_len: int,
                          rng: np.random.Generator,
-                         if_header: boolean,
+                         if_header: bool,
                          ) -> tuple[list[list[Cell]], list[str]]:
         """
         Extract the evidence from the relational table.
@@ -271,7 +246,7 @@ class FeverousRandomRetriever(FEVEROUSRetriever):
                      tbl_id: int,
                      header_left: list[tuple[str, int, str]],
                      rng: np.random.Generator,
-                     if_header: boolean,
+                     if_header: bool,
                      ) -> tuple[list[list[Cell]], list[str]]:
         """
         Extract the Evidences from the entity table i.e. from the header left
@@ -312,54 +287,3 @@ class FeverousRandomRetriever(FEVEROUSRetriever):
         selected_content = np.transpose(extracted_cell)
         headers = selected_headers[:, 2]
         return selected_content, headers
-
-
-@hydra.main(config_path="../config/", config_name="config.yaml")
-def main(cfg):
-    print(type(cfg))
-    db = FeverousDB(cfg.data_path)
-    page_id = '1889 Liverpool City Council election'
-    page_json = db.get_doc_json(page_id)
-    wiki_page = WikiPage(page_id, page_json)
-
-    # wiki_tables = wiki_page.get_tables()  # return list of all Wiki Tables
-    # print(wiki_tables[8].all_cells)
-    # print(wiki_tables[8])
-
-    class_feverous = FeverousRandomRetriever(cfg.data_path,
-                                             cfg.num_evidence,
-                                             cfg.n_pieces,
-                                             cfg.table_per_page,
-                                             cfg.evidence_per_table,
-                                             cfg.column_per_table,
-                                             cfg.seed
-                                             )
-
-    rng = np.random.default_rng(cfg.seed)
-    # evidences = class_feverous.get_evidence(wiki_tables[0],
-    #                             [],
-    #                             70,
-    #                             rng=rng)
-    #
-    # print(evidences.shape)
-
-    # selected_content, selected_h_cells = class_feverous.relational_table(wiki_tables[0],
-    #                                                                      0,
-    #                                                                      25,
-    #                                                                      rng,
-    #                                                                      True
-    #                                                                      )
-    # print(selected_content[0], '\n')
-    # print(selected_h_cells[0], '\n')
-
-    output = class_feverous.retrieve()
-    # first_evidence = output[1]
-    #
-    # print(first_evidence)
-    for i,o in enumerate(output):
-        print(f'Evidence {i}: ', o)
-
-
-
-if __name__ == '__main__':
-    main()

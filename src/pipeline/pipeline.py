@@ -1,7 +1,4 @@
 from abc import abstractmethod
-#from ..evidence import EvidenceRetriever
-#from claim import TextualClaim
-#from claim import TextualClaimGenerator
 
 
 class PipelineElement:

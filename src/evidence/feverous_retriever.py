@@ -2,17 +2,16 @@ from abc import ABC, abstractmethod
 from typing import Tuple, List, Any
 
 import hydra
-
-from utils import WikiTable
-from evidence_retriever import EvidenceRetriever
-from evidence import Evidence, EvidencePiece
-
-from database import FeverousDB
-from utils import WikiPage
+from . import EvidenceRetriever
+from . import Evidence
+from . import EvidencePiece
+from feverous.database.feverous_db import FeverousDB
+from ..utils import WikiTable
+from ..utils import WikiPage
 import numpy as np
 
 
-class FEVEROUSRetriever(EvidenceRetriever, ABC):
+class FeverousRetriever(EvidenceRetriever, ABC):
     """
     Retrieves evidence specifically from the FEVEROUS DB.
     """
@@ -24,7 +23,8 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
                  table_per_page=1,
                  evidence_per_table=1,
                  column_per_table=2,
-                 seed=None):
+                 seed=None,
+                 verbose=False):
         """
         :param p_dataset: path of the dataset
         :param num_evidence: how many Evidences you want to get
@@ -33,6 +33,7 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
         :param evidence_per_table: how many Evidences from the same table
         :param column_per_table: how many cells for 1 Evidence
         :param seed: used for reproducibility
+        :param verbose: if True, prints additional info during retrieval
         """
         super().__init__(n_pieces=num_evidence)
 
@@ -46,6 +47,7 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
         self.evidence_per_table = evidence_per_table
         self.column_per_table = column_per_table
         self.seed = seed
+        self.verbose = verbose
 
     def retrieve(
             self
@@ -92,7 +94,7 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
         for id in self.ids[:]:
             # retrieve the page
             page_json = self.db.get_doc_json(id)
-            print('%%%%%%%%%%%%%%%%%%%%%% new_id ', id)
+            if self.verbose: print('%%%%%%%%%%%%%%%%%%%%%% new_id ', id)
 
             # parse the page in WikiPage format
             wiki_page = WikiPage(id, page_json)
@@ -131,9 +133,9 @@ class FEVEROUSRetriever(EvidenceRetriever, ABC):
                 break
             if len(total_evidences) > self.num_evidence:
                 total_evidences = total_evidences[:self.num_evidence]
-
-        print(f"Evidences retrieved {len(total_evidences)}/{self.num_evidence}")
-        print(f"Id not used {len(discarded_ids)}/{len(self.ids)}")
+        if self.verbose:
+            print(f"Evidences retrieved {len(total_evidences)}/{self.num_evidence}")
+            print(f"Id not used {len(discarded_ids)}/{len(self.ids)}")
 
         return total_evidences
 

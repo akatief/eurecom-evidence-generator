@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from pipeline import PipelineElement
+from ..pipeline import PipelineElement
 
 
 class EvidenceRetriever(PipelineElement):
@@ -25,5 +25,5 @@ class EvidenceRetriever(PipelineElement):
 
         raise NotImplementedError("Must have implemented this.")
 
-    def __call__(self):
+    def __call__(self, *args):
         return self.retrieve()

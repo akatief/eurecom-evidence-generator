@@ -1,8 +1,8 @@
-
-data_path: ${hydra:runtime.cwd}/../datasets/filtereddb4.db
+data_path: ../datasets/filtereddb4.db
 num_evidence: 50 # how many Evidences you want to get
 n_pieces: 2
 table_per_page: 1 # how many tables per page you want to scan
 evidence_per_table: 1 # how many Evidences from the same table
 column_per_table: 2 # how many cells for 1 Evidence
 seed: 42 # used for reproducibility
+model_path: ../models/t5_4.bin

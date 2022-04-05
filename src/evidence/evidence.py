@@ -2,7 +2,7 @@ class EvidencePiece:
     """
     Contains a single piece of information pertaining to some Evidence.
     """
-
+    #TODO: make it more general, not bound to table structure
     def __init__(self, wikipage, cell, header_content):
         """
         cell id => cell_<table_id>_<row_num>_<column_num>

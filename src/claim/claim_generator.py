@@ -1,7 +1,6 @@
 from abc import abstractmethod
-from ..evidence import Evidence
-from ..claim import TextualClaim
 from ..pipeline import PipelineElement
+
 
 class TextualClaimGenerator(PipelineElement):
     '''
@@ -19,3 +18,6 @@ class TextualClaimGenerator(PipelineElement):
         :return: a list of TextualClaim objects
         '''
         raise NotImplementedError("Must have implemented this.")
+
+    def __call__(self, *args, **kwargs):
+        return self.generate(args[0])
