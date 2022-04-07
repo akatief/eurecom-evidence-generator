@@ -1,13 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Tuple, List, Any
+from typing import Any, List, Tuple
 
-import hydra
 from . import EvidenceRetriever
 from . import Evidence
 from . import EvidencePiece
 from feverous.database.feverous_db import FeverousDB
-from ..utils import WikiTable
-from ..utils import WikiPage
+from feverous.utils.wiki_page import WikiTable
+from feverous.utils.wiki_page import WikiPage
 import numpy as np
 
 
@@ -19,7 +18,6 @@ class FeverousRetriever(EvidenceRetriever, ABC):
     def __init__(self,
                  p_dataset: str,
                  num_evidence: int,
-                 n_pieces: int,
                  table_per_page=1,
                  evidence_per_table=1,
                  column_per_table=2,
@@ -28,7 +26,6 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         """
         :param p_dataset: path of the dataset
         :param num_evidence: how many Evidences you want to get
-        :param n_pieces: ?
         :param table_per_page: how many tables per page you want to scan
         :param evidence_per_table: how many Evidences from the same table
         :param column_per_table: how many cells for 1 Evidence
@@ -51,7 +48,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
     def retrieve(
             self
-    ) -> list[Evidence]:
+    ) -> List[Evidence]:
         """
         Scans whole FEVEROUS dataset and returns list of Evidence objects.
         It extracts a number of evidence specified by num_evidence.
@@ -94,7 +91,8 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         for id in self.ids[:]:
             # retrieve the page
             page_json = self.db.get_doc_json(id)
-            if self.verbose: print('%%%%%%%%%%%%%%%%%%%%%% new_id ', id)
+            if self.verbose:
+                print('%%%%%%%%%%%%%%%%%%%%%% new_id ', id)
 
             # parse the page in WikiPage format
             wiki_page = WikiPage(id, page_json)
@@ -114,6 +112,12 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                 # get the left indexes
                 if i >= self.table_per_page:
                     break
+                tbl_id = int(tbl.get_id().split('_')[1])
+
+                caption = [str(s) for s in
+                           wiki_page.get_context(f'table_caption_{tbl_id}')]
+
+                tbl.caption = caption
 
                 # TODO possible bug: check what happen with multiple row
                 header_left, table_len = self.get_index(tbl)
@@ -123,7 +127,8 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                                                                    rng=rng)
 
                 if evidence_from_table is not None:
-                    for e in self.create_positive_evidence(evidence_from_table):
+                    positive_evidences = self.create_positive_evidence(evidence_from_table)
+                    for e in positive_evidences:
                         total_evidences.append(e)
 
                 else:
@@ -140,8 +145,8 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         return total_evidences
 
     def create_positive_evidence(self,
-                                 evidence_from_table: list[list[EvidencePiece]],
-                                 ) -> list[Evidence]:
+                                 evidence_from_table: List[List[EvidencePiece]],
+                                 ) -> List[Evidence]:
         """
         It takes as argument the List of EvidencePieces created from a specific table.
         It returns the list of Evidence object created from each set of EvidencePieces.
@@ -169,7 +174,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
     def get_index(self,
                   tbl: WikiTable
-                  ) -> tuple[list[tuple[Any, Any, Any]], int]:
+                  ) -> Tuple[List[Tuple[Any, Any, Any]], int]:
         """
         it scans all the table to check if header on the left are present
 
@@ -199,10 +204,10 @@ class FeverousRetriever(EvidenceRetriever, ABC):
     @abstractmethod
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
-                                header_left: list[tuple[str, int, str]],
+                                header_left: List[Tuple[str, int, str]],
                                 table_len: int,
                                 if_header=True,
-                                rng=None) -> list[list[EvidencePiece]]:
+                                rng=None) -> List[List[EvidencePiece]]:
         """
         it is used to extract the "meaningful" attributes from one table at time.
         "Meaningful" is defined by the target application.

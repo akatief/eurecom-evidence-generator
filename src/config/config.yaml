@@ -1,4 +1,3 @@
-
 data_path: ${hydra:runtime.cwd}/../datasets/filtereddb4.db
 num_evidence: 50 # how many Evidences you want to get
 n_pieces: 2

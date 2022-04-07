@@ -1,17 +1,18 @@
+from typing import List, Tuple
+
 import numpy as np
 from numpy import ndarray
+from feverous.utils.wiki_table import Cell
 
-
-from ..evidence import EvidencePiece
+from evidence import EvidencePiece
 from . import FeverousRetriever
-from ..utils import WikiTable
-from ..utils.wiki_table import Cell
+from feverous.utils.wiki_page import WikiTable
 
 
 class FeverousRandomRetriever(FeverousRetriever):
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
-                                header_left: list[tuple[str, int, str]],
+                                header_left: List[Tuple[str, int, str]],
                                 table_len: int,
                                 if_header=True,
                                 rng=None) -> ndarray:
@@ -39,18 +40,19 @@ class FeverousRandomRetriever(FeverousRetriever):
         """
         # 0 for first table, 1 for second table, ...
         tbl_id = int(tbl.get_id().split('_')[1])
+
         # returns multiple Row that are headers
         headers = tbl.get_header_rows()
 
         # No row headers in the table
         # table id = Allerheiligenstriezel
-        if len(headers) == 0:
+        if len(headers) == 0 and len(header_left) == 0:
             return None
 
         # TODO bug: Pivot table not header row 'Miguel Ángel Rodríguez (squash player)'
         # Not enough column for one Evidence
         # TODO: headers row may have different legth
-        if len(headers[0].row) < self.column_per_table:
+        if len(headers) != 0 and len(headers[0].row) < self.column_per_table:
             return None
 
         output = self.random_strategy(tbl_id,
@@ -68,7 +70,10 @@ class FeverousRandomRetriever(FeverousRetriever):
         for evidence in selected_cells:
             local_evidences = []
             for i, c in enumerate(evidence):
-                local_evidences.append(EvidencePiece(tbl.page, c, selected_h_cells[i]))
+                local_evidences.append(EvidencePiece(tbl.page,
+                                                     tbl.caption,
+                                                     c,
+                                                     selected_h_cells[i]))
 
             evidences.append(np.array(local_evidences))
 
@@ -77,11 +82,11 @@ class FeverousRandomRetriever(FeverousRetriever):
     def random_strategy(self,
                         tbl_id: int,
                         tbl: WikiTable,
-                        header_left: list[tuple[str, int, str]],
+                        header_left: List[Tuple[str, int, str]],
                         table_len: int,
                         if_header: bool,
                         rng: np.random.Generator
-                        ) -> tuple[list[list[Cell]], list[str]]:
+                        ) -> Tuple[List[List[Cell]], List[str]]:
         """
         It returns the list of evidences extracted from the table.
         the length of the list depends on "evidence_per_table"
@@ -123,7 +128,7 @@ class FeverousRandomRetriever(FeverousRetriever):
                          table_len: int,
                          rng: np.random.Generator,
                          if_header: bool,
-                         ) -> tuple[list[list[Cell]], list[str]]:
+                         ) -> Tuple[List[List[Cell]], List[str]]:
         """
         Extract the evidence from the relational table.
         It returns the list of extracted evidences along with the headers.
@@ -153,7 +158,8 @@ class FeverousRandomRetriever(FeverousRetriever):
         # from [start_i + 1,  end_i ]
 
         # randomly choose the headers
-        list_j = rng.choice(len(selected_header.row), self.column_per_table,
+        list_j = rng.choice(len(selected_header.row),
+                            self.column_per_table,
                             replace=False)
         selected_h_cells = np.array(selected_header.row)[list_j]
         selected_h_cells = [h.content for h in selected_h_cells]
@@ -177,8 +183,11 @@ class FeverousRandomRetriever(FeverousRetriever):
         #     return None
         selected_content = []
         for i in list_i:
-            selected_content.append([tbl.get_cell(f'cell_{tbl_id}_{i}_{j}')
-                                     for j in list_j])
+            try:
+                selected_content.append([tbl.get_cell(f'cell_{tbl_id}_{i}_{j}')
+                                         for j in list_j])
+            except Exception:
+                return None
 
         if if_header:
             return selected_content, selected_h_cells
@@ -189,11 +198,11 @@ class FeverousRandomRetriever(FeverousRetriever):
                              tbl: WikiTable,
                              rng: np.random.Generator,
                              table_len: int,
-                             ) -> tuple[int, int, int]:
+                             ) -> Tuple[int, int, int]:
         """
         Given a table, it randomly finds a subtable which is used to sample the evidences
 
-        :param tbl: tbl to wich extract the subtable
+        :param tbl: tbl to which extract the subtable
         :param rng: random numpy generator
         :param table_len: lenght of the table
 
@@ -227,7 +236,7 @@ class FeverousRandomRetriever(FeverousRetriever):
             len_interval = max_row_header - i_header
             # len_interval == 1 => consecutive headers
             # len_interval < num_evidence => not enough row to extract evidence
-            if len_interval == 1 or len_interval < self.num_evidence:
+            if len_interval == 1 or len_interval < self.evidence_per_table:
                 random_row_h_index = (random_row_h_index + 1) % len(header_row_nums)
                 i_header = header_row_nums[random_row_h_index]
             else:
@@ -244,10 +253,10 @@ class FeverousRandomRetriever(FeverousRetriever):
     def entity_table(self,
                      tbl: WikiTable,
                      tbl_id: int,
-                     header_left: list[tuple[str, int, str]],
+                     header_left: List[Tuple[str, int, str]],
                      rng: np.random.Generator,
                      if_header: bool,
-                     ) -> tuple[list[list[Cell]], list[str]]:
+                     ) -> Tuple[List[List[Cell]], List[str]]:
         """
         Extract the Evidences from the entity table i.e. from the header left
 
@@ -261,6 +270,7 @@ class FeverousRandomRetriever(FeverousRetriever):
         """
         # header_left [(header_cell_id, row_number,content), ... ]
         header_left = np.array(header_left)
+
         # Not enough rows
         if len(header_left) < self.column_per_table:
             return None
@@ -272,16 +282,26 @@ class FeverousRandomRetriever(FeverousRetriever):
         # Now we need to select the cells from the selected headers
         rows = np.array(tbl.get_rows())
         i = selected_headers[:, 1].astype(int)
+
         selected_rows = rows[i]  # take only the selected row
 
         extracted_cell = []
         for r in selected_rows:
             # Not enough cells
-            if len(r.row) < self.evidence_per_table:
+
+            unique_cells = [r.row[0]]
+            for c in r.row[1:]:
+                if c.content in [u.content for u in unique_cells]:
+                    continue
+                unique_cells.append(c)
+
+            if len(unique_cells) - 1 < self.evidence_per_table:
                 return None
-            cells = rng.choice(r.row,
+
+            cells = rng.choice(unique_cells[1:],
                                self.evidence_per_table,
                                replace=False)
+
             extracted_cell.append(cells)
 
         selected_content = np.transpose(extracted_cell)

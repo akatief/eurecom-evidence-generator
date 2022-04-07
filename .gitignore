@@ -106,6 +106,8 @@ cython_debug/
 
 # datasets
 data/
+# models
+models/
 
 # hydra
 outputs/

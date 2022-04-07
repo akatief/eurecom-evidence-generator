@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from ..pipeline import PipelineElement
+from pipeline import PipelineElement
 
 
 class TextualClaimGenerator(PipelineElement):

@@ -9,7 +9,8 @@ class FeverousGenerator(TextualClaimGenerator):
         self.tokenizer = ppb.T5Tokenizer.from_pretrained("t5-small")
         config = ppb.AutoConfig.from_pretrained("t5-small")
         self.model = ppb.T5ForConditionalGeneration(config)
-        self.model.load_state_dict(torch.load(model_path))
+        self.model.load_state_dict(torch.load(model_path,
+                                              map_location=torch.device('cpu')))
         self.model.eval()
 
     def _evidence_to_text(self, evidence):
