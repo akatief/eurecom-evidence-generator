@@ -39,16 +39,17 @@ def main(cfg):
     generator = FeverousGenerator(cfg.main.model_path)
 
     pipeline = ClaimGeneratorPipeline([retriever, generator])
-    output, text_evidence = pipeline.generate(
-        None)  # Right now, FeverousRetriever doesn't support an input table
+    # Right now, FeverousRetriever doesn't support an input table
+    output, text_evidence, json_output = pipeline.generate(None)
 
     # output, text_evidence = generator.generate(output)
 
-    for i, (o, e) in enumerate(zip(output, text_evidence)):
+    for i, (o, e, json) in enumerate(zip(output, text_evidence, json_output)):
         print()
         print(f'Claim {i}: ')
         print('Generated: ', o)
         print('Evidence : ', e)
+        print('Json: ', json)
         
 
 if __name__ == '__main__':

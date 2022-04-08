@@ -5,7 +5,7 @@ notebook:
   data_path: ../examples/data/filtereddb4.db
   model_path: ../examples/models/t5_train_feverous.bin
 
-num_evidence: 15 # how many Evidences you want to get
+num_evidence: 2 # how many Evidences you want to get
 table_per_page: 2 # how many tables per page you want to scan
 evidence_per_table: 2 # how many Evidences from the same table
 column_per_table: 2 # how many cells for 1 Evidence

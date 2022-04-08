@@ -86,7 +86,7 @@ class FeverousRandomRetriever(FeverousRetriever):
                         table_len: int,
                         if_header: bool,
                         rng: np.random.Generator
-                        ) -> Tuple[List[List[Cell]], List[str]]:
+                        ) -> Tuple[List[List[Cell]], List[Cell]]:
         """
         It returns the list of evidences extracted from the table.
         the length of the list depends on "evidence_per_table"
@@ -128,7 +128,7 @@ class FeverousRandomRetriever(FeverousRetriever):
                          table_len: int,
                          rng: np.random.Generator,
                          if_header: bool,
-                         ) -> Tuple[List[List[Cell]], List[str]]:
+                         ) -> Tuple[List[List[Cell]], List[Cell]]:
         """
         Extract the evidence from the relational table.
         It returns the list of extracted evidences along with the headers.
@@ -162,7 +162,7 @@ class FeverousRandomRetriever(FeverousRetriever):
                             self.column_per_table,
                             replace=False)
         selected_h_cells = np.array(selected_header.row)[list_j]
-        selected_h_cells = [h.content for h in selected_h_cells]
+        # selected_h_cells = [h.content for h in selected_h_cells]
 
         # Now that we have the columns we randomly select #evidence_per_table rows
         possible_rows = np.arange(start_i + 1, end_i)
@@ -256,7 +256,7 @@ class FeverousRandomRetriever(FeverousRetriever):
                      header_left: List[Tuple[str, int, str]],
                      rng: np.random.Generator,
                      if_header: bool,
-                     ) -> Tuple[List[List[Cell]], List[str]]:
+                     ) -> Tuple[List[List[Cell]], List[Cell]]:
         """
         Extract the Evidences from the entity table i.e. from the header left
 
@@ -268,7 +268,7 @@ class FeverousRandomRetriever(FeverousRetriever):
 
         :return: the list of the selected cells and the content of the headers
         """
-        # header_left [(header_cell_id, row_number,content), ... ]
+        # header_left [(header_cell, row_number, content), ... ]
         header_left = np.array(header_left)
 
         # Not enough rows
@@ -305,5 +305,6 @@ class FeverousRandomRetriever(FeverousRetriever):
             extracted_cell.append(cells)
 
         selected_content = np.transpose(extracted_cell)
-        headers = selected_headers[:, 2]
+        headers = selected_headers[:, 0]
+
         return selected_content, headers

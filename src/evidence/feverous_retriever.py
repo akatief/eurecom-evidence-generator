@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Tuple
 
+from feverous.utils.wiki_table import Cell
+
 from . import EvidenceRetriever
 from . import Evidence
 from . import EvidencePiece
@@ -197,14 +199,14 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                 if first_cell.is_header:
                     # (header_cell_id, row_number)
                     header_index.append(
-                        (first_cell.name, int(row.row_num), first_cell.content))
+                        (first_cell, int(row.row_num), first_cell.content))
 
         return header_index, count
 
     @abstractmethod
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
-                                header_left: List[Tuple[str, int, str]],
+                                header_left: List[Tuple[Cell, int, str]],
                                 table_len: int,
                                 if_header=True,
                                 rng=None) -> List[List[EvidencePiece]]:

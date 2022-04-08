@@ -2,10 +2,10 @@ from abc import abstractmethod
 
 
 class PipelineElement:
-    '''
+    """
     Defines a block of a ClaimGeneratorPipeline. __cell__ method takes all arguments, executes the main function of the
     block and returns the input of the next.
-    '''
+    """
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
@@ -13,10 +13,10 @@ class PipelineElement:
 
 
 class ClaimGeneratorPipeline:
-    '''
+    """
     Runs a claim generation task starting from raw data all the way to textual claims.
     Pipeline is made of PipelineElements that are run in sequence. An element output is the input of the next.
-    '''
+    """
 
     def __init__(self, elements):
         self.elements = elements

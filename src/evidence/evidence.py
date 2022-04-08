@@ -6,19 +6,18 @@ class EvidencePiece:
     Contains a single piece of information pertaining to some Evidence.
     """
     # TODO: make it more general, not bound to table structure
-    def __init__(self, wikipage, caption, cell, header_content):
+    def __init__(self, wikipage, caption, cell, header_cell):
         """
         cell id => cell_<table_id>_<row_num>_<column_num>
         """
         self.wiki_page = wikipage
         self.cell_id = cell.name
-        self.table = cell.name.split('_')[1]
-        self.row = cell.name.split('_')[2]
-        self.column = cell.name.split('_')[3]
+        self.cell = cell
 
         self.caption = caption
 
-        self.header_content = self._clean_content(header_content)
+        self.header_content = self._clean_content(header_cell.content)
+        self.header = header_cell
 
         # Added for the links in the table
         content = cell.content
