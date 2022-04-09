@@ -9,5 +9,6 @@ source .env/bin/activate
 ```
 Then, install all requirements
 ```python
-python3 setup.py
+python3 setup.py build
+python3 setup.py install
 ```

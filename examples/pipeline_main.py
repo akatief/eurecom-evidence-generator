@@ -2,8 +2,8 @@ import hydra
 from feverous.database.feverous_db import FeverousDB
 from feverous.utils.wiki_page import WikiPage
 
-from claim import FeverousGenerator
-from pipeline import ClaimGeneratorPipeline
+from src.claim import FeverousGenerator
+from src.pipeline import ClaimGeneratorPipeline
 from src.evidence import FeverousRandomRetriever
 
 

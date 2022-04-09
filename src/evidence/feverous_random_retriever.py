@@ -4,7 +4,7 @@ import numpy as np
 from numpy import ndarray
 from feverous.utils.wiki_table import Cell
 
-from evidence import EvidencePiece
+from ..evidence import EvidencePiece
 from . import FeverousRetriever
 from feverous.utils.wiki_page import WikiTable
 
