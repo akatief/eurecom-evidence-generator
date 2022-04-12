@@ -7,3 +7,6 @@ hydra-core~=1.1.1
 sentencepiece~=0.1.96
 feverous~=0.0.3
 torch~=1.11.0
+tensorflow~=2.8.0
+tensorflow-text~=2.8.1
+tf-sentencepiece~=0.1.90

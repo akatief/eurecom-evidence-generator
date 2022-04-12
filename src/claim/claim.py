@@ -3,25 +3,21 @@ from abc import abstractmethod
 
 class TextualClaim:
     def __init__(self,
-            evidence):
+                 claim,
+                 evidence,
+                 json):
         '''
         Initializes a TextualClaim object.
 
-        :param evidence: Evidence to generate a claim from
+        :param claim: textual claim
+        :param evidence: Evidence the claim was generated from
+        :param json: Evidence in json format
         '''
+        self.claim = claim
         self.evidence = evidence
+        self.json = json
 
-    def getEvidence(self):
-        return self.evidence
 
     @abstractmethod
     def __str__(self):
-        '''
-        Generates a textual claim based on provided evidence
-
-        :return: A textual claim
-        '''
-        """
-        Returns:
-        """
         raise NotImplementedError("Must have implemented this.")
