@@ -22,12 +22,13 @@ class ClaimGeneratorPipeline:
         self.elements = elements
 
     @abstractmethod
-    def generate(self, table):
+    def generate(self, table, header_content=False):
         """
         Runs the whole pipeline on the provided table
 
         :param self
         :param table: table to retrieve textual claims from.
+        :param header_content: if True, return the header inside the content
         :returns A list of textual claims
         """
         next_input = table

@@ -35,7 +35,6 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         :param verbose: if True, prints additional info during retrieval
         """
         super().__init__(n_pieces=num_evidence)
-
         self.db = FeverousDB(p_dataset)  # Databes that contains the entire database
         self.path_db = p_dataset  # path used for extracting the dataset
         self.ids = list(self.db.get_non_empty_doc_ids())  # to be changed
@@ -116,7 +115,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                     break
                 tbl_id = int(tbl.get_id().split('_')[1])
 
-                caption = [str(s) for s in
+                caption = [s for s in
                            wiki_page.get_context(f'table_caption_{tbl_id}')]
 
                 tbl.caption = caption
