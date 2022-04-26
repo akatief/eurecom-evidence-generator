@@ -9,6 +9,6 @@ source .env/bin/activate
 ```
 Then, install all requirements
 ```python
-python3 setup.py build
-python3 setup.py install
+pip install -r requirements.txt
+pip install --no-deps feverous
 ```
