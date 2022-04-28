@@ -1,6 +1,3 @@
-from abc import abstractmethod
-
-
 class TextualClaim:
     def __init__(self,
                  claim,
@@ -17,6 +14,5 @@ class TextualClaim:
         self.evidence = evidence
         self.json = json
 
-    @abstractmethod
     def __str__(self):
-        raise NotImplementedError("Must have implemented this.")
+        return self.claim
