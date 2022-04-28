@@ -1,13 +1,14 @@
 from .evidence import EvidencePiece
 from .evidence import Evidence
 from .evidence_retriever import EvidenceRetriever
-from .feverous_retriever import FeverousRetriever
-from .feverous_random_retriever import FeverousRandomRetriever
+from .feverous_retriever import FeverousRetrieverRandom
+from .feverous_retriever import FeverousTemplateRetriever
 
 __all__ = [
     "EvidencePiece",
     "Evidence",
     "EvidenceRetriever",
-    "FeverousRetriever",
-    "FeverousRandomRetriever",
+    "FeverousRetrieverRandom",
+    "FeverousTemplateRetriever",
 ]
+

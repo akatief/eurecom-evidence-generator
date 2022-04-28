@@ -1,56 +1,41 @@
-import hydra
-from feverous.database.feverous_db import FeverousDB
-from feverous.utils.wiki_page import WikiPage
+import json
 
-from src.claim import FeverousGenerator
+import hydra
+
+# TODO: try to understand because if it is not used you get error
+import tensorflow_text
+
+from src.claim import FeverousGenerator, ToTToGenerator
+
 from src.pipeline import ClaimGeneratorPipeline
-from src.evidence import FeverousRandomRetriever
+from src.evidence import FeverousRetrieverRandom
 
 
 @hydra.main(config_path="../src/config/", config_name="config_pipeline.yaml")
 def main(cfg):
-    db = FeverousDB(cfg.main.data_path)
-    page_id = '1889 Liverpool City Council election'
-    page_json = db.get_doc_json(page_id)
-    wiki_page = WikiPage(page_id, page_json)
-
-    # wiki_tables = wiki_page.get_tables()  # return list of all Wiki Tables
-    # print(wiki_tables[8].all_cells)
-    # print(wiki_tables[8])
-
-    # class_feverous = FeverousRandomRetriever(cfg.data_path_main,
-    #                                          cfg.num_evidence,
-    #                                          cfg.n_pieces,
-    #                                          cfg.table_per_page,
-    #                                          cfg.evidence_per_table,
-    #                                          cfg.column_per_table,
-    #                                          cfg.seed
-    #                                          )
-    #
-    # rng = np.random.default_rng(cfg.seed)
-
-    retriever = FeverousRandomRetriever(cfg.main.data_path,
+    retriever = FeverousRetrieverRandom(cfg.main.data_path,
                                         cfg.num_evidence,
                                         cfg.table_per_page,
                                         cfg.evidence_per_table,
                                         cfg.column_per_table,
                                         cfg.seed
                                         )
-    generator = FeverousGenerator(cfg.main.model_path)
+
+    generator = FeverousGenerator(encoding='compact',
+                                  model_path=cfg.main.model_path)
+    #
+    # generator = ToTToGenerator(encoding='totto',
+    #                            model_path=cfg.main.model_path)
 
     pipeline = ClaimGeneratorPipeline([retriever, generator])
-    # Right now, FeverousRetriever doesn't support an input table
-    output, text_evidence, json_output = pipeline.generate(None)
+    claims = pipeline.generate(
+        None,  # Right now, FeverousRetriever doesn't support an input table
+        header_content=cfg.header_content)
+    json_evidence = [c.json for c in claims]
 
-    # output, text_evidence = generator.generate(output)
+    with open('data.json', 'w', encoding='utf-8') as f:
+        json.dump(json_evidence, f, ensure_ascii=False, indent=4)
 
-    for i, (o, e, json) in enumerate(zip(output, text_evidence, json_output)):
-        print()
-        print(f'Claim {i}: ')
-        print('Generated: ', o)
-        print('Evidence : ', e)
-        print('Json: ', json)
-        
 
 if __name__ == '__main__':
     main()
