@@ -16,7 +16,8 @@ class ToTToGenerator(TextualClaimGenerator):
             tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY
         ]
         if encoding != 'totto' and encoding != 'compact':
-            raise ValueError("Invalid encoding choice.")
+            raise ValueError("Invalid encoding choice. Expected 'totto' or 'compact'"
+                             f"received {encoding}")
         self.encoding = encoding
 
     def _generate_claim(self, text):

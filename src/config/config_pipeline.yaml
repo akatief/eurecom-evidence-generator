@@ -1,13 +1,13 @@
 main:
-  data_path: ../../../data/filtereddb4.db
+  data_path: ../../../data/filtereddb_st.db
   model_path: ../../../models/t5_4.bin
 
 notebook:
-  data_path: ../examples/data/filtereddb4.db
+  data_path: ../examples/data/filtereddb_st.db
   model_path: ../examples/t5_4.bin
 
 header_content: True
-num_evidence: 500 # how many Evidences you want to get
+num_evidence: 25 # how many Evidences you want to get
 table_per_page: 1 # how many tables per page you want to scan
 evidence_per_table: 1 # how many Evidences from the same table
 column_per_table: 2 # how many cells for 1 Evidence

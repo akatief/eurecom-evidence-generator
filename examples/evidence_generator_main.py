@@ -2,7 +2,7 @@ import hydra
 import numpy as np
 from feverous.database.feverous_db import FeverousDB
 from feverous.utils.wiki_page import WikiPage
-from evidence import FeverousRandomRetriever
+from evidence import FeverousRetrieverRandom
 
 
 @hydra.main(config_path="../src/config/", config_name="config_pipeline.yaml")
@@ -23,7 +23,7 @@ def main(cfg):
 
     rng = np.random.default_rng(cfg.seed)
 
-    retriever = FeverousRandomRetriever(cfg.main.data_path,
+    retriever = FeverousRetrieverRandom(cfg.main.data_path,
                                         cfg.num_evidence,
                                         cfg.table_per_page,
                                         cfg.evidence_per_table,
