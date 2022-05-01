@@ -3,7 +3,7 @@ import numpy as np
 from feverous.utils.wiki_table import Cell
 from feverous.utils.wiki_page import WikiTable
 
-from evidence.feverous_retriever.utils import TableExceptionType, TableException
+from ..utils import TableExceptionType, TableException
 
 
 class RandomEntityTable:

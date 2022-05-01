@@ -11,7 +11,7 @@ class PipelineElement:
     def __call__(self, *args, **kwargs):
         raise NotImplementedError("Must have implemented this.")
 
-
+# TODO: add verbose argument to whole pipeline
 class ClaimGeneratorPipeline:
     """
     Runs a claim generation task starting from raw data all the way to textual claims.

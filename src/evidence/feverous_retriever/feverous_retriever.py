@@ -7,11 +7,11 @@ from feverous.utils.wiki_page import WikiPage
 from feverous.utils.wiki_page import WikiTable
 from feverous.utils.wiki_table import Cell
 
-from evidence import Evidence
-from evidence import EvidencePiece
-from evidence import EvidenceRetriever
+from ..evidence import Evidence
+from ..evidence import EvidencePiece
+from ..evidence_retriever import EvidenceRetriever
 
-from logger import logger
+from ...logger import logger
 from .utils import TableException, TableExceptionType, check_header_left, \
     create_positive_evidence
 
@@ -52,6 +52,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         self.seed = seed
         self.verbose = verbose
 
+    @property
     def retrieve(
             self
     ) -> List[Evidence]:
@@ -122,7 +123,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
             rng.shuffle(tables)
 
             try:
-                evidences = self.analize_tables(rng, tables, wiki_page)
+                evidences = self.analyze_tables(rng, tables, wiki_page)
                 total_evidences = total_evidences + evidences
             except TableException as e:
                 discarded_ids[e.error[0].value] += [e.error[1]]
@@ -144,7 +145,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
         return total_evidences
 
-    def analize_tables(self,
+    def analyze_tables(self,
                        rng: np.random.Generator,
                        tables: List,
                        wiki_page: WikiPage,

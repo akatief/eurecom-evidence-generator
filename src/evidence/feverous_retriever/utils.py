@@ -1,10 +1,10 @@
-from evidence import Evidence, EvidencePiece
+from ..evidence import Evidence, EvidencePiece
 from enum import Enum
 from feverous.utils.wiki_page import WikiTable
 from feverous.utils.wiki_table import Cell
 from typing import List, Tuple
 
-from logger import logger
+from ...logger import logger
 
 
 class TableExceptionType(Enum):

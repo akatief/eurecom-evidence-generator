@@ -5,11 +5,10 @@ from numpy import ndarray
 from feverous.utils.wiki_table import Cell
 from feverous.utils.wiki_page import WikiTable
 
-from evidence import EvidencePiece
+from ...evidence import EvidencePiece
 from ..feverous_retriever import FeverousRetriever
 from .random_entity_table import RandomEntityTable
 from .random_relational_table import RandomRelationalTable
-
 from ..utils import TableExceptionType, TableException
 
 
