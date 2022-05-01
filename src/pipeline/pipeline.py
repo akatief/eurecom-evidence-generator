@@ -3,7 +3,8 @@ from abc import abstractmethod
 
 class PipelineElement:
     """
-    Defines a block of a ClaimGeneratorPipeline. __cell__ method takes all arguments, executes the main function of the
+    Defines a block of a ClaimGeneratorPipeline. __cell__ method takes all arguments,
+     executes the main function of the
     block and returns the input of the next.
     """
 
@@ -11,11 +12,13 @@ class PipelineElement:
     def __call__(self, *args, **kwargs):
         raise NotImplementedError("Must have implemented this.")
 
+
 # TODO: add verbose argument to whole pipeline
 class ClaimGeneratorPipeline:
     """
     Runs a claim generation task starting from raw data all the way to textual claims.
-    Pipeline is made of PipelineElements that are run in sequence. An element output is the input of the next.
+    Pipeline is made of PipelineElements that are run in sequence.
+    An element output is the input of the next.
     """
 
     def __init__(self, elements):

@@ -23,6 +23,7 @@ def clean_content(content):
 
     return content
 
+
 def to_compact_text(evidence_pieces):
     """
     Converts evidence objects into strings the model can elaborate to generate

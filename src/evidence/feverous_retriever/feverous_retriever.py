@@ -7,11 +7,11 @@ from feverous.utils.wiki_page import WikiPage
 from feverous.utils.wiki_page import WikiTable
 from feverous.utils.wiki_table import Cell
 
+from logger import logger
 from ..evidence import Evidence
 from ..evidence import EvidencePiece
 from ..evidence_retriever import EvidenceRetriever
 
-from ...logger import logger
 from .utils import TableException, TableExceptionType, check_header_left, \
     create_positive_evidence
 
@@ -133,7 +133,9 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                 break
 
         if self.verbose:
-            logger.info(f" Evidences retrieved {len(total_evidences)}/{self.num_evidence}")
+            logger.info(
+                f" Evidences retrieved {len(total_evidences)}/{self.num_evidence}"
+            )
             logger.info(f" Id not used {len(discarded_ids)}/{len(self.ids)}")
             logger.info(f' Id error NO_HEADERS  {len(discarded_ids["NO_HEADERS"])}')
             logger.info(f' Id error NO_ENOUGH_ROW  {len(discarded_ids["NO_ENOUGH_ROW"])}')

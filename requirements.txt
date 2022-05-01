@@ -3,7 +3,7 @@ hydra-core~=1.1.1
 sentencepiece~=0.1.96
 torch~=1.11.0
 tensorflow~=2.8.0
-tensorflow-text~=2.8.1
+tensorflow_text~=2.8.1
 tf-sentencepiece~=0.1.2
 blis==0.4.1
 catalogue==1.0.0

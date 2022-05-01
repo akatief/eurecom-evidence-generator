@@ -11,5 +11,5 @@ num_evidence: 25 # how many Evidences you want to get
 table_per_page: 1 # how many tables per page you want to scan
 evidence_per_table: 1 # how many Evidences from the same table
 column_per_table: 2 # how many cells for 1 Evidence
-seed: 42 # used for reproducibility
+seed: 43 # used for reproducibility
 

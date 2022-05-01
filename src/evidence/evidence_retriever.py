@@ -26,4 +26,4 @@ class EvidenceRetriever(PipelineElement):
         raise NotImplementedError("Must have implemented this.")
 
     def __call__(self, *args):
-        return self.retrieve()
+        return self.retrieve

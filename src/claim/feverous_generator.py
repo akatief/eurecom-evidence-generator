@@ -5,8 +5,10 @@ from .claim_generator import TextualClaimGenerator
 
 class FeverousGenerator(TextualClaimGenerator):
     """
-    Generates TextualClaim objects using a t5-small model fine-tuned on a small part of the FEVEROUS dataset.
-    The model was fine-tuned on strings encoded in 'compact' form. Different encodings may provide worse results.
+    Generates TextualClaim objects using a t5-small model fine-tuned
+    on a small part of the FEVEROUS dataset.
+    The model was fine-tuned on strings encoded in 'compact' form.
+    Different encodings may provide worse results.
     """
 
     def __init__(self,

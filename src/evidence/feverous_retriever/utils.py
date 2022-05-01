@@ -4,7 +4,7 @@ from feverous.utils.wiki_page import WikiTable
 from feverous.utils.wiki_table import Cell
 from typing import List, Tuple
 
-from ...logger import logger
+from logger import logger
 
 
 class TableExceptionType(Enum):
@@ -14,7 +14,6 @@ class TableExceptionType(Enum):
     SUBTABLE_NOT_FOUND = 'SUBTABLE_NOT_FOUND'  # Not possible to find a subtable
     NO_ENOUGH_ROW = 'NO_ENOUGH_ROW'  # Not enough row inside the subtable
     NO_ENOUGH_TBL = 'NO_ENOUGH_TBL'  # Not enough tbl inside the wikipage
-
 
 
 class TableException(Exception):

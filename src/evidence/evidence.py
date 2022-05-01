@@ -70,7 +70,6 @@ class Evidence:
                                 columns = sample header from the table
                                 row = total number of evidence
         :param label: Defines the claim as either "SUPPORTS" or "REFUTES"
-        :param template: The template with which the evidence was retrieved
         """
         self.evidence_pieces = evidence_pieces
         self.column_per_table = column_per_table
