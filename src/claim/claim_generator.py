@@ -9,10 +9,11 @@ class TextualClaimGenerator(PipelineElement):
     Element generating textual claims starting from Evidence objects.
     """
 
-    def __init__(self, encoding):
+    def __init__(self, encoding, verbose=False):
         self.encoding = encoding
+        self.verbose = False
 
-    def generate(self, evidence, verbose=False):
+    def generate(self, evidence):
         """
         Generate textual claims based on evidence
 
@@ -27,7 +28,7 @@ class TextualClaimGenerator(PipelineElement):
             claim_json = TextualClaimGenerator._evidence_to_json(i, e, claim_text)
             claim = TextualClaim(claim_text, e, claim_json)
             claims.append(claim)
-            if verbose:
+            if self.verbose:
                 logger.info(claim)
         return claims
 

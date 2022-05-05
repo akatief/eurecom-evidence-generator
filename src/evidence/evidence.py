@@ -8,8 +8,6 @@ class EvidencePiece:
     Contains a single piece of information pertaining to some Evidence.
     """
 
-    # TODO: make it more general, not bound to table structure
-    # TODO: add argument comments
     def __init__(self, wikipage, caption, cell, header_cell):
         """
         cell id => cell_<table_id>_<row_num>_<column_num>
@@ -17,7 +15,7 @@ class EvidencePiece:
         self.wiki_page = wikipage
         self.cell_id = cell.name
         self.cell = cell
-        # TODO: error because some tables may have more headers on the left
+        #TODO: error because some tables may have more headers on the left
         #  Universal Storage Platform, discontinued
         self.table = int(self.cell_id.split('_')[1])
         self.row = int(self.cell_id.split('_')[2])
@@ -54,7 +52,6 @@ class EvidencePiece:
             return False
 
 
-# TODO: add argument comments
 class Evidence:
     """
     Contains pieces of evidence along with the template giving meaning.
@@ -62,9 +59,7 @@ class Evidence:
 
     def __init__(self,
                  evidence_pieces,
-                 column_per_table,
-                 label,
-                 seed):
+                 label):
         """
         :param evidence_pieces: List of List of pieces of evidence
                                 columns = sample header from the table
@@ -72,8 +67,6 @@ class Evidence:
         :param label: Defines the claim as either "SUPPORTS" or "REFUTES"
         """
         self.evidence_pieces = evidence_pieces
-        self.column_per_table = column_per_table
-        self.seed = seed
         self.label = label
 
     def __str__(self):
@@ -89,7 +82,7 @@ class Evidence:
         to generate a textual claim.
         Uses selected encoding. Possible choices are 'compact' and 'totto'.
 
-        :param encoding:
+        :param encoding: encoding to use
         :return: text encoded in chosen form.
         """
         if encoding == 'compact':

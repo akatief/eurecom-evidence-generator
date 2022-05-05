@@ -42,14 +42,14 @@ def to_compact_text(evidence_pieces):
 def to_totto_text(evidence_pieces):
     """
     Converts evidence objects into strings
-     the model can elaborate to generate a textual claim
+    the model can elaborate to generate a textual claim
 
     :return: text encoded in totto form.
              eg: <page_title> list of governors of south carolina </page_title>
               <section_title> governors under the constitution of 1868 </section_title>
               <table> <cell> 76 </cell>
               <cell> daniel henry chamberlain </cell>
-               <cell> december 1, 1874 </cell> </table>
+              <cell> december 1, 1874 </cell> </table>
     """
     pieces = evidence_pieces
     pieces.sort()

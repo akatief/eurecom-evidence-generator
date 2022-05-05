@@ -13,8 +13,9 @@ class FeverousGenerator(TextualClaimGenerator):
 
     def __init__(self,
                  encoding,
-                 model_path):
-        super().__init__(encoding)
+                 model_path,
+                 verbose=False):
+        super().__init__(encoding, verbose)
         self.tokenizer = ppb.T5Tokenizer.from_pretrained("t5-small")
         config = ppb.AutoConfig.from_pretrained("t5-small")
         self.model = ppb.T5ForConditionalGeneration(config)

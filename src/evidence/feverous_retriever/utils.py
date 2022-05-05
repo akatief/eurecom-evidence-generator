@@ -2,7 +2,8 @@ from ..evidence import Evidence, EvidencePiece
 from enum import Enum
 from feverous.utils.wiki_page import WikiTable
 from feverous.utils.wiki_table import Cell
-from typing import List, Tuple
+from typing import List
+from typing import Tuple
 
 from logger import logger
 
@@ -59,17 +60,13 @@ def check_header_left(tbl: WikiTable
 
 
 def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]],
-                             column_per_table: int,
-                             seed: int
                              ) -> List[Evidence]:
     """
     It takes as argument the List of EvidencePieces created from a specific table.
     It returns the list of Evidence object created from each set of EvidencePieces.
 
     :param seed:
-    :type seed:
     :param column_per_table:
-    :type column_per_table:
     :param evidence_from_table: each element is [EvidencePiece] got from the table
 
     :return positive_evidences: list containing the positive Evidence
@@ -79,9 +76,7 @@ def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]],
         positive_evidences.append(
             Evidence(
                 evidence_piece,
-                column_per_table,
-                "SUPPORTS",
-                seed
+                "SUPPORTS"
             )
         )
 

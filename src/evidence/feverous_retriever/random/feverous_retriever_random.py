@@ -1,5 +1,4 @@
 from typing import List, Tuple
-
 import numpy as np
 from numpy import ndarray
 from feverous.utils.wiki_table import Cell
@@ -13,33 +12,41 @@ from ..utils import TableExceptionType, TableException
 
 
 class FeverousRetrieverRandom(FeverousRetriever):
+    def __init__(self,
+                 p_dataset: str,
+                 num_evidence: int,
+                 table_per_page=1,
+                 evidence_per_table=1,
+                 column_per_table=2,
+                 key_strategy=None,
+                 seed=None,
+                 verbose=False):
+        super().__init__(p_dataset, num_evidence, table_per_page, evidence_per_table, column_per_table, seed, verbose)
+        self.key_strategy = key_strategy
+
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
                                 header_left: List[Tuple[str, int, str]],
-                                table_len: int,
-                                if_header=True,
-                                rng=None) -> ndarray:
+                                table_len: int):
         """
-          it is used to extract the "meaningful" attributes from one table at time.
-          "Meaningful" is defined by the target application.
+        it is used to extract the "meaningful" attributes from one table at time.
+        "Meaningful" is defined by the target application.
 
-          Example:
-                evidences = [
-                    [
-                        EvidencePiece('Totti', 'name'),
-                        EvidencePiece(128, 'scored_gol)
-                    ],
-                    [...],
-                    ...
-                ]
+        Example:
+              evidences = [
+                  [
+                      EvidencePiece('Totti', 'name'),
+                      EvidencePiece(128, 'scored_gol)
+                  ],
+                  [...],
+                  ...
+              ]
 
-          :param tbl: scanned table WikiTable
-          :param header_left: list of tuple. Each element contains the first left header
-          :param table_len: number of row in the table, scalar
-          :param if_header: add or not add the header in the output Boolean
-          :param rng: random numpy generator
+        :param tbl: scanned table WikiTable
+        :param header_left: list of tuple. Each element contains the first left header
+        :param table_len: number of row in the table, scalar
 
-          :return evidences: contains the list of evidences from this table
+        :return: evidences: contains the list of evidences from this table
         """
         # returns multiple Row that are headers
         headers = tbl.get_header_rows()
@@ -54,9 +61,7 @@ class FeverousRetrieverRandom(FeverousRetriever):
         try:
             output = self.random_strategy(tbl,
                                           header_left,
-                                          table_len,
-                                          if_header,
-                                          rng)
+                                          table_len)
         except TableException:
             raise
 
@@ -64,22 +69,20 @@ class FeverousRetrieverRandom(FeverousRetriever):
         evidences = []
         for evidence in selected_cells:
             local_evidences = []
-            for i, c in enumerate(evidence):
+            for header_cell, cell in zip(selected_h_cells,evidence):
                 local_evidences.append(EvidencePiece(tbl.page,
                                                      tbl.caption,
-                                                     c,
-                                                     selected_h_cells[i]))
+                                                     cell,
+                                                     header_cell))
 
-            evidences.append(np.array(local_evidences))
+            evidences.append(local_evidences)
 
-        return np.array(evidences)
+        return evidences
 
     def random_strategy(self,
                         tbl: WikiTable,
                         header_left: List[Tuple[str, int, str]],
                         table_len: int,
-                        if_header: bool,
-                        rng: np.random.Generator
                         ) -> Tuple[List[List[Cell]], List[Cell]]:
         """
         It returns the list of evidences extracted from the table.
@@ -91,8 +94,6 @@ class FeverousRetrieverRandom(FeverousRetriever):
         :param tbl: one table present in the page
         :param header_left: list of tuple. Each element contains the first left header
         :param table_len: len of the table
-        :param if_header: to insert or not the header
-        :param rng: random generator for reproducibility
 
         :return: selected_content, headers
         """
@@ -100,19 +101,15 @@ class FeverousRetrieverRandom(FeverousRetriever):
         try:
             # Not header on the left
             if len(header_left) == 0:
-                rrl = RandomRelationalTable(self.evidence_per_table,
-                                            self.column_per_table)
-                return rrl.relational_table(tbl,
+                rrt = RandomRelationalTable(self.evidence_per_table, self.column_per_table, self.rng)
+                return rrt.relational_table(tbl,
                                             table_len,
-                                            rng,
-                                            if_header
+                                            self.key_strategy
                                             )
             else:
-                ret = RandomEntityTable(self.evidence_per_table, self.column_per_table)
+                ret = RandomEntityTable(self.evidence_per_table, self.column_per_table, self.rng)
                 return ret.entity_table(tbl,
                                         header_left,
-                                        rng,
-                                        if_header
                                         )
         except TableException:
             raise

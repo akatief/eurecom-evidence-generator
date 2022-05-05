@@ -13,7 +13,6 @@ class PipelineElement:
         raise NotImplementedError("Must have implemented this.")
 
 
-# TODO: add verbose argument to whole pipeline
 class ClaimGeneratorPipeline:
     """
     Runs a claim generation task starting from raw data all the way to textual claims.
@@ -25,7 +24,7 @@ class ClaimGeneratorPipeline:
         self.elements = elements
 
     @abstractmethod
-    def generate(self, table, header_content=False):
+    def generate(self, input=None):
         """
         Runs the whole pipeline on the provided table
 
@@ -34,7 +33,7 @@ class ClaimGeneratorPipeline:
         :param header_content: if True, return the header inside the content
         :returns A list of textual claims
         """
-        next_input = table
+        next_input = input
         # Calls __call__ method for each element in sequence
         for e in self.elements:
             next_input = e(next_input)

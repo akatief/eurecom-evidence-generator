@@ -9,8 +9,8 @@ class ToTToGenerator(TextualClaimGenerator):
     The model was fine-tuned on strings encoded in 'totto' form.
     Different encodings may provide worse results.
     """
-    def __init__(self, encoding, model_path):
-        super().__init__(encoding)
+    def __init__(self, encoding, model_path, verbose=False):
+        super().__init__(encoding, verbose)
         self.model = tf.saved_model.load(model_path)
         self.model_func = self.model.signatures[
             tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY

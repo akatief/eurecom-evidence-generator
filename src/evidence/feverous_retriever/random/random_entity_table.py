@@ -7,16 +7,18 @@ from ..utils import TableExceptionType, TableException
 
 
 class RandomEntityTable:
-    def __init__(self, *args):
-
-        self.evidence_per_table = args[0]
-        self.column_per_table = args[1]
+    def __init__(self,
+                 evidence_per_table,
+                 columns_per_table,
+                 rng: np.random.Generator,
+                 ):
+        self.rng = rng
+        self.evidence_per_table = evidence_per_table
+        self.columns_per_table = columns_per_table
 
     def entity_table(self,
                      tbl: WikiTable,
                      header_left: List[Tuple[str, int, str]],
-                     rng: np.random.Generator,
-                     if_header: bool,
                      ) -> Tuple[List[List[Cell]], List[Cell]]:
         """
         Extract the Evidences from the entity table i.e. from the header left
@@ -24,7 +26,6 @@ class RandomEntityTable:
         :param tbl: one table present in the page
         :param header_left: list of tuple. Each element contains the first left header
         :param rng: random generator
-        :param if_header: to insert or not the header
 
         :return: the list of the selected cells and the content of the headers
         """
@@ -32,12 +33,12 @@ class RandomEntityTable:
         header_left = np.array(header_left)
 
         # Not enough rows
-        if len(header_left) < self.column_per_table:
+        if len(header_left) < self.columns_per_table:
             raise TableException(TableExceptionType.NO_ENOUGH_ROW, tbl.page)
 
-        selected_headers = rng.choice(header_left,
-                                      self.column_per_table,
-                                      replace=False)
+        selected_headers = self.rng.choice(header_left,
+                                           self.columns_per_table,
+                                           replace=False)
 
         # Now we need to select the cells from the selected headers
         rows = np.array(tbl.get_rows())
@@ -57,7 +58,7 @@ class RandomEntityTable:
             if len(unique_cells) - 1 < self.evidence_per_table:
                 raise TableException(TableExceptionType.NO_ENOUGH_COL, tbl.page)
 
-            cells = rng.choice(unique_cells[1:],
+            cells = self.rng.choice(unique_cells[1:],
                                self.evidence_per_table,
                                replace=False)
 

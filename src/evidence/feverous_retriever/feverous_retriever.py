@@ -12,8 +12,10 @@ from ..evidence import Evidence
 from ..evidence import EvidencePiece
 from ..evidence_retriever import EvidenceRetriever
 
-from .utils import TableException, TableExceptionType, check_header_left, \
-    create_positive_evidence
+from .utils import TableException
+from .utils import TableExceptionType
+from .utils import check_header_left
+from .utils import create_positive_evidence
 
 
 class FeverousRetriever(EvidenceRetriever, ABC):
@@ -38,7 +40,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         :param seed: used for reproducibility
         :param verbose: if True, prints additional info during retrieval
         """
-        super().__init__(n_pieces=num_evidence)
+        super().__init__(n_pieces=num_evidence, verbose=verbose)
 
         self.db = FeverousDB(p_dataset)  # Databes that contains the entire database
         self.path_db = p_dataset  # path used for extracting the dataset
@@ -50,7 +52,8 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         self.evidence_per_table = evidence_per_table
         self.column_per_table = column_per_table
         self.seed = seed
-        self.verbose = verbose
+        # Random generator for reproducibility purposes
+        self.rng = np.random.default_rng(self.seed)
 
     @property
     def retrieve(
@@ -88,9 +91,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
         :return: a list of Evidence objects
         """
-        # Random generator for reproducibility purposes
-        rng = np.random.default_rng(self.seed)
-        rng.shuffle(self.ids)
+        self.rng.shuffle(self.ids)
 
         discarded_ids = dict()
         discarded_ids[TableExceptionType.NO_HEADERS.value] = []
@@ -120,10 +121,10 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                 continue
 
             # Shuffle the tables
-            rng.shuffle(tables)
+            self.rng.shuffle(tables)
 
             try:
-                evidences = self.analyze_tables(rng, tables, wiki_page)
+                evidences = self.analyze_tables(tables, wiki_page)
                 total_evidences = total_evidences + evidences
             except TableException as e:
                 discarded_ids[e.error[0].value] += [e.error[1]]
@@ -148,7 +149,6 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         return total_evidences
 
     def analyze_tables(self,
-                       rng: np.random.Generator,
                        tables: List,
                        wiki_page: WikiPage,
                        ) -> List:
@@ -177,15 +177,12 @@ class FeverousRetriever(EvidenceRetriever, ABC):
             try:
                 evidence_from_table = self.get_evidence_from_table(tbl,
                                                                    header_left,
-                                                                   table_len,
-                                                                   rng=rng)
+                                                                   table_len)
             except TableException:
                 raise
 
             else:
-                positive_evidences = create_positive_evidence(evidence_from_table,
-                                                              self.column_per_table,
-                                                              self.seed)
+                positive_evidences = create_positive_evidence(evidence_from_table)
 
                 return positive_evidences
 
@@ -193,9 +190,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
                                 header_left: List[Tuple[Cell, int, str]],
-                                table_len: int,
-                                if_header=True,
-                                rng=None) -> List[List[EvidencePiece]]:
+                                table_len: int) -> List[List[EvidencePiece]]:
         """
         it is used to extract the "meaningful" attributes from one table at time.
         "Meaningful" is defined by the target application.
@@ -216,7 +211,6 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         :param tbl: scanned table WikiTable
         :param header_left: list of tuple. Each element contains the first left header
         :param table_len: number of row in the table, scalar
-        :param if_header: add or not add the header in the output Boolean
-        :param rng: Random numpy generator
+        :return: a list of lists of EvidencePiece objects
         """
         pass
