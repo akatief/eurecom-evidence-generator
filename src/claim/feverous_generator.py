@@ -10,7 +10,6 @@ class FeverousGenerator(TextualClaimGenerator):
     The model was fine-tuned on strings encoded in 'compact' form.
     Different encodings may provide worse results.
     """
-
     def __init__(self,
                  encoding,
                  model_path,
@@ -24,10 +23,18 @@ class FeverousGenerator(TextualClaimGenerator):
         self.model.eval()
 
     def _generate_claim(self, text):
-        input_ids = self.tokenizer.encode(text,
+        model_input = self.tokenizer.encode(text,
                                           add_special_tokens=True,
                                           truncation=True,
                                           return_tensors='pt'
                                           ).to(self.model.device)
-        model_output = self.model.generate(input_ids)
-        return self.tokenizer.decode(model_output[0])
+        model_output = self.model.generate(model_input)
+        text_output = self.tokenizer.decode(model_output[0])
+        return self._clean_text(text_output)
+
+    @staticmethod
+    def _clean_text(text):
+        text = text.replace('<pad>','')
+        text = text.replace('</s>', '')
+        text = text.strip()
+        return text

@@ -1,6 +1,7 @@
 import logging
 from typing import List, Tuple
 import numpy as np
+import spacy
 from feverous.utils.wiki_table import Cell
 from feverous.utils.wiki_page import WikiTable
 
@@ -20,7 +21,7 @@ class RandomRelationalTable:
     def relational_table(self,
                          table: WikiTable,
                          table_len: int,
-                         key_strategy = None,
+                         key_strategy='random',
                          ) -> Tuple[List[List[Cell]], List[Cell]]:
         """
         Extract the evidence from the relational table.
@@ -56,16 +57,23 @@ class RandomRelationalTable:
                                               replace=False)
         elif key_strategy == 'sensible':
             # start_row + 1 is passed to skip the header
-            list_cols = [self._key_sensible(table, selected_header.row, start_row + 1, end_row)] \
+            list_cols = [RandomRelationalTable._key_sensible(table, selected_header.row, start_row + 1, end_row)] \
                         + self.rng.choice(len(selected_header.row),
                                           self.columns_per_table - 1,
                                           replace=False)
-        else:
+        elif key_strategy == 'entity':
+            # start_row + 1 is passed to skip the header
+            list_cols = [RandomRelationalTable._key_entity(table, selected_header.row, start_row + 1, end_row)] \
+                        + self.rng.choice(len(selected_header.row),
+                                          self.columns_per_table - 1,
+                                          replace=False)
+        elif key_strategy == 'random':
             # randomly choose the evidence headers in the selected header
             list_cols = self.rng.choice(len(selected_header.row),
                                         self.columns_per_table,
                                         replace=False)
-
+        else:
+            raise ValueError("Invalid choice of key detection strategy.")
         selected_h_cells = np.array(selected_header.row)[list_cols]
 
         # Now that we have the columns we randomly select #evidence_per_table rows
@@ -150,14 +158,11 @@ class RandomRelationalTable:
 
         return selected_h_index, selected_h, max_row_header
 
-    # TODO: implement more sensible heuristics
-    #       Look for entities, look for textual headers. String > int > ...
-    #       Make a ranking based on closeness to left and type
-    #       Strings are better than numericals, see Prof. resources
-    def _key_sensible(self,table, header, start_row, end_row):
+    @staticmethod
+    def _key_sensible(table, header, start_row, end_row):
         """
         Check table for all columns without duplicates and select one
-        based on some heuristic
+        using heuristic based on data type and distance from left column
 
         :param table: The table to detect the key from
         :param header: The selected header of the subtable
@@ -166,18 +171,114 @@ class RandomRelationalTable:
         """
         table_id = int(table.get_id().split('_')[1])
         n_cols = len(header)
-        candidates = []
+        # Find candidate columns with all unique values and compute their scores
+        candidates_scores = []
         for col in range(n_cols):
             values = []
+            types = []
             for row in range(start_row, end_row):
                 # Some tables have missing cells, skip them
                 cell_id = f'cell_{table_id}_{row}_{col}'
                 if cell_id in table.all_cells:
                     values.append(table.get_cell(cell_id))
+                    if len(types) < 5:
+                        types.append(RandomRelationalTable._get_type(table.get_cell(cell_id).content))
             if len(set(values)) == len(values): # If col contains no duplicates appends it to candidates
-                candidates.append(col)
-        if len(candidates) == 0: # If no columns are without duplicates defaults to first column
+                col_type = RandomRelationalTable._col_type(types)
+                candidates_scores.append(RandomRelationalTable._get_type_score(col, col_type))
+        if len(candidates_scores) == 0: # If no columns are without duplicates defaults to first column
             return 0
-        else: # Else returns first potential primary key found
-            return candidates[0]
+        return np.argmax(candidates_scores)
 
+    #TODO: refactor to avoid duplicating code
+    @staticmethod
+    def _key_entity(table, header, start_row, end_row):
+        """
+        Check table for all columns without duplicates and select one
+        using heuristic based on named entity recognition and distance
+        from left column
+
+        :param table: The table to detect the key from
+        :param header: The selected header of the subtable
+        :param start_row: Row to begin analysis from
+        :param end_row: Row to end analysis at
+        """
+        NER = spacy.load("en_core_web_sm")
+        table_id = int(table.get_id().split('_')[1])
+        n_cols = len(header)
+        # Find candidate columns with all unique values and compute their scores
+        candidates_scores = []
+        for col in range(n_cols):
+            values = []
+            labels = []
+            for row in range(start_row, end_row):
+                # Some tables have missing cells, skip them
+                cell_id = f'cell_{table_id}_{row}_{col}'
+                if cell_id in table.all_cells:
+                    values.append(table.get_cell(cell_id))
+                    labels.append(NER(table.get_cell(cell_id).content))
+            if len(set(values)) == len(values): # If col contains no duplicates appends it to candidates
+                candidates_scores.append(RandomRelationalTable._get_entity_score(col, labels))
+        if len(candidates_scores) == 0: # If no columns are without duplicates defaults to first column
+            return 0
+        return np.argmax(candidates_scores)
+
+
+    @staticmethod
+    def _get_type(n):
+        if n.isdigit():
+            return int
+        else:
+            try:
+                float(n)
+                return float
+            except ValueError:
+                return str
+
+    @staticmethod
+    def _col_type(types):
+        col_type = int
+        for t in types:
+            if col_type is int and (t is float or t is str):
+                col_type = t
+            elif col_type is float and t is str:
+                col_type = t
+            else:
+                break
+        return col_type
+
+    @staticmethod
+    def _get_type_score(col, type):
+        """
+        Returns a score based on column position in table
+        and type. The closer a column is to the left border
+        the higher its score is. Strings score highest, followed
+        by ints and floats.
+        """
+        if type is str:
+            type_mult = 1
+        elif type is int:
+            type_mult = 0.5
+        else: #float
+            type_mult = 0.3
+        return 1 / (col + 1) * type_mult
+
+    @staticmethod
+    def _get_entity_score(col, labels):
+        """
+        Returns a score based on column position in table
+        and Entity. The closer a column is to the left border
+        the higher its score is. A heuristics assigns a score
+        to different types of entity
+        """
+        score = 0
+        n_rows = len(labels)
+        for l in labels:
+            if l in ['EVENT', 'FAC', 'LAW', 'NORP', 'ORG', 'PERSON', 'PRODUCT', 'WORK_OF_ART']:
+                # Score normalized by number of rows
+                score += 1 / n_rows
+            elif l in ['LANGUAGE', 'GPE', 'LOC']:
+                score += 0.5 / n_rows
+            elif l in ['CARDINAL', 'DATE', 'MONEY', 'ORDINAL', 'PERCENT', 'QUANTITY', 'TIME']:
+                score += 0.3 / n_rows
+        return 1 / (col + 1) * score

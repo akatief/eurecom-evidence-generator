@@ -25,8 +25,7 @@ class TextualClaimGenerator(PipelineElement):
         for i, e in enumerate(evidence):
             evidence_text = e.to_text(self.encoding)
             claim_text = self._generate_claim(evidence_text)
-            claim_json = TextualClaimGenerator._evidence_to_json(i, e, claim_text)
-            claim = TextualClaim(claim_text, e, claim_json)
+            claim = TextualClaim(claim_text, e)
             claims.append(claim)
             if self.verbose:
                 logger.info(claim)
@@ -44,47 +43,6 @@ class TextualClaimGenerator(PipelineElement):
         """
         raise NotImplementedError("Must have implemented this.")
 
-    # TODO: move this in claim.py
-    @staticmethod
-    def _evidence_to_json(sample_id,
-                          evidence,
-                          claim):
-        """
-        Encodes an Evidence object and its corresponding TextualClaim in JSON format
-
-        :param sample_id:
-        :param evidence:
-        :param claim:
-        :return: a dict object ready to be serialized
-        """
-        content = []
-        context = {}
-        for piece in evidence.evidence_pieces:
-            key_h = f"{piece.wiki_page}_{piece.header.name}"
-            key_c = f"{piece.wiki_page}_{piece.cell_id}"
-            content.append(key_h)
-            content.append(key_c)
-            context[key_h] = piece.header_content
-            context[key_c] = piece.content
-
-        evidence_json = {
-            "id": sample_id,
-            "label": evidence.label,
-            "annotator_operations": [{
-                "operation": "start",
-                "value": "start",
-                "time": "0"
-            }],
-            "evidence": [{
-                "content": content,
-                "context": context
-            }],
-            "claim": claim,
-            "expected_challenge": "NumericalReasoning",
-            "challenge": "NumericalReasoning"
-        }
-
-        return evidence_json
 
     def __call__(self, *args, **kwargs):
         return self.generate(args[0])
