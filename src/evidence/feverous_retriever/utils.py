@@ -1,4 +1,6 @@
-from ..evidence import Evidence, EvidencePiece
+import numpy as np
+from ..evidence import Evidence
+from ..evidence import EvidencePiece
 from enum import Enum
 from feverous.utils.wiki_page import WikiTable
 from feverous.utils.wiki_table import Cell
@@ -15,6 +17,8 @@ class TableExceptionType(Enum):
     SUBTABLE_NOT_FOUND = 'SUBTABLE_NOT_FOUND'  # Not possible to find a subtable
     NO_ENOUGH_ROW = 'NO_ENOUGH_ROW'  # Not enough row inside the subtable
     NO_ENOUGH_TBL = 'NO_ENOUGH_TBL'  # Not enough tbl inside the wikipage
+    NO_EXTRACTED_TBL = 'NO_EXTRACTED_TBL'  # Not enough valid table in the wikipage
+    NO_NEGATIVE_SENT = 'NO_NEGATIVE_SENT'  # Not possible to extract negative sentence
 
 
 class TableException(Exception):
@@ -59,30 +63,79 @@ def check_header_left(tbl: WikiTable
     return header_index, len(rows)
 
 
-def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]],
+def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]]
                              ) -> List[Evidence]:
     """
     It takes as argument the List of EvidencePieces created from a specific table.
     It returns the list of Evidence object created from each set of EvidencePieces.
 
-    :param seed:
-    :param column_per_table:
     :param evidence_from_table: each element is [EvidencePiece] got from the table
-
     :return positive_evidences: list containing the positive Evidence
     """
     positive_evidences = []
-    for evidence_piece in evidence_from_table:
-        positive_evidences.append(
-            Evidence(
-                evidence_piece,
-                "SUPPORTS"
-            )
+    for evidence_pieces in evidence_from_table:
+        e = Evidence(
+            evidence_pieces,  # List of all the evidence pieces which belong to the e
+            "SUPPORTS",
         )
+        positive_evidences.append(e)
 
     return positive_evidences
 
 
-def create_negative_evidence():
-    # TODO: implement_negative_evidence
-    pass
+def create_negative_evidence(
+        evidence_from_table: List[List[EvidencePiece]],
+        wrong_cell: int,
+        rng: np.random.Generator
+) -> List[Evidence]:
+    negative_evidences = []
+    for evidence_pieces in evidence_from_table:
+
+        # randomly select which of the cells has to be swapped
+        pieces_replace = rng.choice(len(evidence_pieces),
+                                    wrong_cell,
+                                    replace=False)
+        # for each selected cell make the swap
+        for p in pieces_replace:
+            # if not enough possible pieces raise error
+            if len(evidence_pieces[p].possible_pieces) <= 1:
+                raise TableException(
+                    TableExceptionType.NO_NEGATIVE_SENT,
+                    evidence_pieces[p].wiki_page
+                )
+
+            # shuffle the possible cells
+            rng.shuffle(evidence_pieces[p].possible_pieces)
+
+            # Select the cell to be swapped
+            selected_cell = None
+            for cell in evidence_pieces[p].possible_pieces:
+                if cell.name != evidence_pieces[p].cell_id and not cell.is_header:
+                    selected_cell = cell
+                    break
+
+            if selected_cell is None:
+                raise TableException(
+                    TableExceptionType.NO_NEGATIVE_SENT,
+                    evidence_pieces[p].wiki_page
+                )
+
+            # Add in the caption the correct cell
+            new_evidence = EvidencePiece(
+                evidence_pieces[p].wiki_page,
+                evidence_pieces[p].caption,
+                selected_cell,
+                evidence_pieces[p].header,
+                evidence_pieces[p].possible_pieces,
+                true_piece=evidence_pieces[p]
+            )
+
+            evidence_pieces[p] = new_evidence
+
+        e = Evidence(
+            evidence_pieces,  # List of all the evidence pieces which belong to the e
+            "REFUTES",
+        )
+        negative_evidences.append(e)
+
+    return negative_evidences

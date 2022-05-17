@@ -1,4 +1,7 @@
+from typing import List
+from feverous.utils.wiki_table import Cell
 from .utils import clean_content
+from .utils import get_context
 from .utils import to_totto_text
 from .utils import to_compact_text
 
@@ -8,27 +11,39 @@ class EvidencePiece:
     Contains a single piece of information pertaining to some Evidence.
     """
 
-    def __init__(self, wikipage, caption, cell, header_cell):
+    # TODO: add argument comments
+    def __init__(self,
+                 wikipage: str,
+                 caption: List,
+                 cell: Cell,
+                 header_cell: Cell,
+                 possible_pieces: List[Cell],
+                 true_piece=None):
         """
         cell id => cell_<table_id>_<row_num>_<column_num>
         """
-        self.wiki_page = wikipage
-        self.cell_id = cell.name
-        self.cell = cell
-        #TODO: error because some tables may have more headers on the left
+        self.true_piece = true_piece  # it contains the ture EvidencePiece if necessary
+        self.possible_pieces = possible_pieces  # Contains the possible rows
+
+        self.wiki_page = wikipage  # the WikiPage name
+        self.cell_id = cell.name  # the id of the cells
+
+        # TODO: error because some tables may have more headers on the left
         #  Universal Storage Platform, discontinued
         self.table = int(self.cell_id.split('_')[1])
         self.row = int(self.cell_id.split('_')[2])
         self.column = int(self.cell_id.split('_')[3])
 
-        self.caption = caption
-
-        self.header_content = clean_content(header_cell.content)
-        self.header = header_cell
+        # contains the title and the sections of the table
+        self.caption = get_context(caption, wikipage)
 
         # Added for the links in the table
-        content = cell.content
-        self.content = clean_content(content)
+        self.cell = cell  # The object Cell
+        self.content = clean_content(cell.content)
+
+        # the content of the header
+        self.header = header_cell  # The cell Header
+        self.header_content = clean_content(header_cell.content)
 
     def __str__(self):
         return f"{self.content} " \
@@ -52,6 +67,7 @@ class EvidencePiece:
             return False
 
 
+# TODO: add argument comments
 class Evidence:
     """
     Contains pieces of evidence along with the template giving meaning.

@@ -35,9 +35,7 @@ class ClaimGeneratorPipeline:
         """
         Runs the whole pipeline on the provided table.
 
-        :param self
-        :param table: table to retrieve textual claims from.
-        :param header_content: if True, return the header inside the content
+        :param input: pipeline input
         :returns A list of textual claims
         """
         next_input = input

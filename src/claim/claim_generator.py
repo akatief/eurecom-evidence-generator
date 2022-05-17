@@ -11,19 +11,20 @@ class TextualClaimGenerator(PipelineElement):
 
     def __init__(self, encoding, verbose=False):
         self.encoding = encoding
-        self.verbose = False
+        self.verbose = verbose
 
     def generate(self, evidence):
         """
         Generate textual claims based on evidence
 
         :param evidence: a list of evidence objects
-        :param verbose: if True prints additional debug informations
         :return: a list of TextualClaim objects
         """
         claims = []
         for i, e in enumerate(evidence):
             evidence_text = e.to_text(self.encoding)
+            if self.verbose:
+                logger.info(evidence_text)
             claim_text = self._generate_claim(evidence_text)
             claim = TextualClaim(claim_text, e)
             claims.append(claim)

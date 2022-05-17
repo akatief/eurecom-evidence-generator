@@ -14,11 +14,14 @@ from src.evidence import FeverousRetrieverRandom
 @hydra.main(config_path="../src/config/", config_name="config_pipeline.yaml")
 def main(cfg):
     retriever = FeverousRetrieverRandom(cfg.main.data_path,
-                                        cfg.num_evidence,
+                                        cfg.positive_evidence,
+                                        cfg.negative_evidence,
+                                        cfg.wrong_cell,
                                         cfg.table_per_page,
                                         cfg.evidence_per_table,
                                         cfg.column_per_table,
-                                        cfg.seed
+                                        cfg.seed,
+                                        cfg.verbose,
                                         )
 
     generator = FeverousGenerator(encoding='compact',

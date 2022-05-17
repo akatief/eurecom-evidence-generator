@@ -1,5 +1,5 @@
 class TextualClaim:
-    #TODO: rename claim to text
+    # TODO: rename claim to text
     def __init__(self,
                  claim,
                  evidence):
@@ -23,32 +23,41 @@ class TextualClaim:
         :param claims: list of TextualClaim objects
         :return: a list of json-formatted claims
         """
-        if not isinstance(claims,list):
+        if not isinstance(claims, list):
             claims = [claims]
         jsons = []
-        for i,c in enumerate(claims):
+        for i, c in enumerate(claims):
             jsons.append(TextualClaim._claim_to_json(i, c))
         return jsons
 
+    # TODO: move this in claim.py
     @staticmethod
     def _claim_to_json(sample_id,
-                          claim):
+                       claim):
         """
         Encodes an Evidence object and its corresponding TextualClaim in JSON format
 
-        :param sample_id: int id of the generated evidence
-        :param claim: a TextualClaim object
+        :param sample_id:
+        :param claim:
         :return: a dict object ready to be serialized
         """
         content = []
         context = {}
         for piece in claim.evidence.evidence_pieces:
-            key_h = f"{piece.wiki_page}_{piece.header.name}"
-            key_c = f"{piece.wiki_page}_{piece.cell_id}"
-            content.append(key_h)
+
+            if piece.true_piece is not None:
+                piece_json = piece.true_piece
+            else:
+                piece_json = piece
+
+            # TODO: understand if header in the content
+            key_h = f"{piece_json.wiki_page}_{piece_json.header.name}"
+            # content.append(key_h)
+
+            key_c = f"{piece_json.wiki_page}_{piece_json.cell_id}"
             content.append(key_c)
-            context[key_h] = piece.header_content
-            context[key_c] = piece.content
+
+            context[key_c] = piece_json.caption + [key_h]
 
         evidence_json = {
             "id": sample_id,
@@ -62,9 +71,9 @@ class TextualClaim:
                 "content": content,
                 "context": context
             }],
-            "claim": claim.claim,
-            "expected_challenge": "NumericalReasoning",
-            "challenge": "NumericalReasoning"
+            "claim": str(claim),
+            "expected_challenge": "Augumented",
+            "challenge": "Augumented"
         }
 
         return evidence_json
