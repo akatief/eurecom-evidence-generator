@@ -1,4 +1,5 @@
 import re
+from typing import List
 
 
 def clean_content(content):
@@ -88,3 +89,18 @@ def to_totto_text(evidence_pieces):
 
     text += c_end + r_end + t_end
     return text
+
+
+def get_context(
+        caption: List,
+        title: str
+) -> List[str]:
+    # the caption it has already been generated
+    if isinstance(caption[0], str):
+        return caption
+
+    return [
+        f'{title}{s.get_id()}' if str(s.get_id()).startswith('_')
+        else f'{title}_{s.get_id()}'
+        for s in caption
+    ]

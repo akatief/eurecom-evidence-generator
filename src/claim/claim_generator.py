@@ -59,12 +59,20 @@ class TextualClaimGenerator(PipelineElement):
         content = []
         context = {}
         for piece in evidence.evidence_pieces:
-            key_h = f"{piece.wiki_page}_{piece.header.name}"
-            key_c = f"{piece.wiki_page}_{piece.cell_id}"
-            content.append(key_h)
+
+            if piece.true_piece is not None:
+                piece_json = piece.true_piece
+            else:
+                piece_json = piece
+
+            # TODO: understand if header in the content
+            key_h = f"{piece_json.wiki_page}_{piece_json.header.name}"
+            # content.append(key_h)
+
+            key_c = f"{piece_json.wiki_page}_{piece_json.cell_id}"
             content.append(key_c)
-            context[key_h] = piece.header_content
-            context[key_c] = piece.content
+
+            context[key_c] = piece_json.caption + [key_h]
 
         evidence_json = {
             "id": sample_id,
@@ -79,8 +87,8 @@ class TextualClaimGenerator(PipelineElement):
                 "context": context
             }],
             "claim": claim,
-            "expected_challenge": "NumericalReasoning",
-            "challenge": "NumericalReasoning"
+            "expected_challenge": "Augumented",
+            "challenge": "Augumented"
         }
 
         return evidence_json

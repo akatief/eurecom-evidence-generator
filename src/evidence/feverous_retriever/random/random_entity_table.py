@@ -6,64 +6,73 @@ from feverous.utils.wiki_page import WikiTable
 from ..utils import TableExceptionType, TableException
 
 
-class RandomEntityTable:
-    def __init__(self, *args):
+def entity_table(
+        tbl: WikiTable,
+        header_left: List[Tuple[Cell, int, str]],
+        rng: np.random.Generator,
+        column_per_table: int,
+        evidence_per_table: int
+) -> Tuple[
+    List[List[Cell]],
+    List[Cell],
+    List[List[Cell]]
+]:
+    """
+    Extract the Evidences from the entity table i.e. from the header left
 
-        self.evidence_per_table = args[0]
-        self.column_per_table = args[1]
+    :param evidence_per_table:
+    :type evidence_per_table:
+    :param column_per_table:
+    :type column_per_table:
+    :param tbl: one table present in the page
+    :param header_left: list of tuple. Each element contains the first left header
+    :param rng: random generator
+    :return: the list of the selected cells and the content of the headers
+    """
+    # header_left [(header_cell, row_number, content), ... ]
+    header_left = np.array(header_left)
 
-    def entity_table(self,
-                     tbl: WikiTable,
-                     header_left: List[Tuple[str, int, str]],
-                     rng: np.random.Generator,
-                     if_header: bool,
-                     ) -> Tuple[List[List[Cell]], List[Cell]]:
-        """
-        Extract the Evidences from the entity table i.e. from the header left
+    # Not enough rows
+    if len(header_left) < column_per_table:
+        raise TableException(TableExceptionType.NO_ENOUGH_ROW, tbl.page)
 
-        :param tbl: one table present in the page
-        :param header_left: list of tuple. Each element contains the first left header
-        :param rng: random generator
-        :param if_header: to insert or not the header
+    selected_headers = rng.choice(header_left,
+                                  column_per_table,
+                                  replace=False)
 
-        :return: the list of the selected cells and the content of the headers
-        """
-        # header_left [(header_cell, row_number, content), ... ]
-        header_left = np.array(header_left)
+    # Now we need to select the cells from the selected headers
+    rows = np.array(tbl.get_rows())
+    i = selected_headers[:, 1].astype(int)
 
-        # Not enough rows
-        if len(header_left) < self.column_per_table:
-            raise TableException(TableExceptionType.NO_ENOUGH_ROW, tbl.page)
+    selected_rows = rows[i]  # take only the selected row
 
-        selected_headers = rng.choice(header_left,
-                                      self.column_per_table,
-                                      replace=False)
+    extracted_cell = []
+    possible_pieces = []
+    for r in selected_rows:
 
-        # Now we need to select the cells from the selected headers
-        rows = np.array(tbl.get_rows())
-        i = selected_headers[:, 1].astype(int)
+        # Obtain first the unique cells form the entity table
+        unique_cells = [r.row[0]]  # The first cell is the header
+        for c in r.row[1:]:  # take all the other cells of the row
+            if c.content in [u.content for u in unique_cells]:
+                continue
+            if c.is_header:
+                continue
 
-        selected_rows = rows[i]  # take only the selected row
+            unique_cells.append(c)
 
-        extracted_cell = []
-        for r in selected_rows:
+        if len(unique_cells) - 1 < evidence_per_table:
+            raise TableException(TableExceptionType.NO_ENOUGH_COL, tbl.page)
 
-            unique_cells = [r.row[0]]
-            for c in r.row[1:]:
-                if c.content in [u.content for u in unique_cells]:
-                    continue
-                unique_cells.append(c)
+        possible_pieces.append(unique_cells)
 
-            if len(unique_cells) - 1 < self.evidence_per_table:
-                raise TableException(TableExceptionType.NO_ENOUGH_COL, tbl.page)
+        # Select from the unique cells the random extracted cell
+        cells = rng.choice(unique_cells[1:],
+                           evidence_per_table,
+                           replace=False)
 
-            cells = rng.choice(unique_cells[1:],
-                               self.evidence_per_table,
-                               replace=False)
+        extracted_cell.append(cells)
 
-            extracted_cell.append(cells)
+    selected_content = np.transpose(extracted_cell)
+    headers = selected_headers[:, 0]
 
-        selected_content = np.transpose(extracted_cell)
-        headers = selected_headers[:, 0]
-
-        return selected_content, headers
+    return selected_content, headers, possible_pieces
