@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from logger import logger
-from ..pipeline import PipelineElement
+from pipeline import PipelineElement
 from .claim import TextualClaim
 
 

@@ -41,8 +41,8 @@ def relational_table(
     tbl_id = int(tbl.get_id().split('_')[1])
     try:
         index, start_row, end_row = sub_relational_table(tbl, rng=rng,
-                                                     table_len=table_len,
-                                                     evidence_per_table=evidence_per_table)
+                                                         table_len=table_len,
+                                                         evidence_per_table=evidence_per_table)
     except TableException:
         raise
 
@@ -51,30 +51,30 @@ def relational_table(
     # Now we have the range of correct rows associated to that specific header
     # from [start_i + 1,  end_i ]
 
-    #TODO: refactor and put strategies in a function
+    # TODO: refactor and put strategies in a function
 
     # randomly choose the evidence headers in the selected header
     if key_strategy == 'first':
         list_cols = [0] + rng.choice(len(tbl_headers.row),
-                                          columns_per_table - 1,
-                                          replace=False)
+                                     columns_per_table - 1,
+                                     replace=False)
     elif key_strategy == 'sensible':
         # start_row + 1 is passed to skip the header
         list_cols = [_key_sensible(tbl, tbl_headers.row, start_row + 1, end_row)] \
                     + rng.choice(len(tbl_headers.row),
-                                      columns_per_table - 1,
-                                      replace=False)
+                                 columns_per_table - 1,
+                                 replace=False)
     elif key_strategy == 'entity':
         # start_row + 1 is passed to skip the header
         list_cols = [_key_entity(tbl, tbl_headers.row, start_row + 1, end_row)] \
                     + rng.choice(len(tbl_headers.row),
-                                      columns_per_table - 1,
-                                      replace=False)
+                                 columns_per_table - 1,
+                                 replace=False)
     elif key_strategy == 'random':
         # randomly choose the evidence headers in the selected header
         list_cols = rng.choice(len(tbl_headers.row),
-                                    columns_per_table,
-                                    replace=False)
+                               columns_per_table,
+                               replace=False)
     else:
         raise ValueError("Invalid choice of key detection strategy.")
     selected_h_cells = np.array(tbl_headers.row)[list_cols]
@@ -92,14 +92,15 @@ def relational_table(
     # extract possible cells for generating negative samples
     # may crash if cell_id not in table
     try:
-        alternative_pieces = extract_alternative_pieces(list_cols, possible_rows, tbl, tbl_id)
+        alternative_pieces = extract_alternative_pieces(list_cols, possible_rows, tbl,
+                                                        tbl_id)
     except KeyError:
         raise TableException(TableExceptionType.ID_NOT_COMPLIANT, tbl.page)
 
     # selected rows from subtable possible rows
     list_rows = rng.choice(possible_rows,
-                        evidence_per_table,
-                        replace=False)
+                           evidence_per_table,
+                           replace=False)
 
     selected_evidences = []
     for row in list_rows:  # For each row
@@ -213,15 +214,16 @@ def _key_sensible(table, header, start_row, end_row):
                 values.append(table.get_cell(cell_id))
                 if len(types) < 5:
                     types.append(_get_type(table.get_cell(cell_id).content))
-        if len(set(values)) == len(values): # If col contains no duplicates appends it to candidates
+        if len(set(values)) == len(
+                values):  # If col contains no duplicates appends it to candidates
             col_type = _col_type(types)
             candidates_scores.append(_get_type_score(col, col_type))
-    if len(candidates_scores) == 0: # If no columns are without duplicates defaults to first column
+    if len(candidates_scores) == 0:  # If no columns are without duplicates defaults to first column
         return 0
     return np.argmax(candidates_scores)
 
 
-#TODO: refactor to avoid duplicating code
+# TODO: refactor to avoid duplicating code
 def _key_entity(table, header, start_row, end_row):
     """
     Check table for all columns without duplicates and select one
@@ -247,9 +249,10 @@ def _key_entity(table, header, start_row, end_row):
             if cell_id in table.all_cells:
                 values.append(table.get_cell(cell_id))
                 labels.append(NER(table.get_cell(cell_id).content))
-        if len(set(values)) == len(values): # If col contains no duplicates appends it to candidates
+        if len(set(values)) == len(
+                values):  # If col contains no duplicates appends it to candidates
             candidates_scores.append(_get_entity_score(col, labels))
-    if len(candidates_scores) == 0: # If no columns are without duplicates defaults to first column
+    if len(candidates_scores) == 0:  # If no columns are without duplicates defaults to first column
         return 0
     return np.argmax(candidates_scores)
 
@@ -288,7 +291,7 @@ def _get_type_score(col, type):
         type_mult = 1
     elif type is int:
         type_mult = 0.5
-    else: #float
+    else:  # float
         type_mult = 0.3
     return 1 / (col + 1) * type_mult
 
@@ -303,7 +306,8 @@ def _get_entity_score(col, labels):
     score = 0
     n_rows = len(labels)
     for l in labels:
-        if l in ['EVENT', 'FAC', 'LAW', 'NORP', 'ORG', 'PERSON', 'PRODUCT', 'WORK_OF_ART']:
+        if l in ['EVENT', 'FAC', 'LAW', 'NORP', 'ORG', 'PERSON', 'PRODUCT',
+                 'WORK_OF_ART']:
             # Score normalized by number of rows
             score += 1 / n_rows
         elif l in ['LANGUAGE', 'GPE', 'LOC']:

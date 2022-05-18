@@ -18,11 +18,14 @@ from .utils import check_header_left
 from .utils import create_positive_evidence
 from .utils import create_negative_evidence
 
+from copy import deepcopy
+
 
 class FeverousRetriever(EvidenceRetriever, ABC):
     """
     Retrieves evidence specifically from the FEVEROUS DB.
     """
+
     # TODO: fill comments
     def __init__(self,
                  p_dataset: str,
@@ -107,7 +110,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
         total_positive_evidences = []
         total_negative_evidences = []
-        for page_name in self.ids[:]:
+        for page_name in self.ids:
             if self.verbose:
                 logger.info(f" wikipage: {page_name}".encode("utf-8"))
 
@@ -210,12 +213,14 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
                 else:  # if no exception has occurred
                     count_extracted += 1  # successfully extracted
-                    positive_evidences += create_positive_evidence(evidence_from_table)
+                    positive_evidences += create_positive_evidence(
+                        deepcopy(evidence_from_table)
+                    )
 
                     # TODO: understand if extract the negative from the positive
                     try:
                         negative_evidences += create_negative_evidence(
-                            evidence_from_table,
+                            deepcopy(evidence_from_table),  # pass a copy
                             self.wrong_cell,
                             self.rng)
                     except TableException:

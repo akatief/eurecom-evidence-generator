@@ -91,6 +91,16 @@ def create_negative_evidence(
     negative_evidences = []
     for evidence_pieces in evidence_from_table:
 
+        present_rows = set([piece.row for piece in evidence_pieces])
+        present_cols = set([piece.column for piece in evidence_pieces])
+
+        if len(present_rows) > 1:
+            already_present = list(present_cols)
+            tbl_type = 'entity'
+        else:
+            already_present = list(present_rows)
+            tbl_type = 'relational'
+
         # randomly select which of the cells has to be swapped
         pieces_replace = rng.choice(len(evidence_pieces),
                                     wrong_cell,
@@ -111,7 +121,13 @@ def create_negative_evidence(
             selected_cell = None
             for cell in evidence_pieces[p].possible_pieces:
                 if cell.name != evidence_pieces[p].cell_id and not cell.is_header:
-                    selected_cell = cell
+                    # Avoid possibility to randomly select same row/column
+                    if tbl_type == 'relational' and cell.row_num not in already_present:
+                        selected_cell = cell
+                        already_present += [cell.row_num]
+                    if tbl_type == 'entity' and cell.col_num not in already_present:
+                        selected_cell = cell
+                        already_present += [cell.col_num]
                     break
 
             if selected_cell is None:

@@ -43,12 +43,19 @@ class TextualClaim:
         """
         content = []
         context = {}
+        swapped = ''
+        true = ''
         for piece in claim.evidence.evidence_pieces:
 
             if piece.true_piece is not None:
+
                 piece_json = piece.true_piece
+                true += f'{piece_json.content}, {piece_json.cell_id} | '
+                swapped += f'{piece.content}, {piece.cell_id} | '
             else:
                 piece_json = piece
+                true += f'{piece_json.content}, {piece_json.cell_id} | '
+                swapped += f'- | '
 
             # TODO: understand if header in the content
             key_h = f"{piece_json.wiki_page}_{piece_json.header.name}"
@@ -72,6 +79,8 @@ class TextualClaim:
                 "context": context
             }],
             "claim": str(claim),
+            "true": true,
+            "swapped": swapped,
             "expected_challenge": "Augumented",
             "challenge": "Augumented"
         }
