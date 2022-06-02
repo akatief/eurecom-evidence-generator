@@ -12,7 +12,7 @@ def relational_table(
         table_len: int,
         rng: np.random.Generator,
         evidence_per_table: int,
-        columns_per_table: int,
+        column_per_table: int,
         key_strategy='random'
 ) -> Tuple[
     List[List[Cell]],
@@ -20,29 +20,34 @@ def relational_table(
     List[List[Cell]]
 ]:
     """
-    Extract the evidence from the relational table.
-    It returns the list of extracted evidences along with the headers.
-    The length of each evidence is given by "column_per_table".
-    The retuned list, is a list of list:
-        evidence_1: [EvidencePiece1, EvidencePiece2],
-        evidence_2: [EvidencePiece1, EvidencePiece2],
-
-    :param columns_per_table:
-    :param evidence_per_table:
+    RANDOMLY  extract the evidence from the relational table.
+    Example:
+        selected_content = [['Totti', 128], ['Cassano', 103], ...]
+        headers = ['name', 'scored_gol']
+        possible_pieces = [ ['Totti', 'Cassano'], [128, 103]]
 
     :param tbl: The table to be scanned
-    :param table_len: the length of the table
-    :param rng: random numpy generator
-    :param key_strategy: heuristic for selecting the key column. Can be 'first', 'sensible' or None
+    :param table_len: the len of the table
+    :param rng: used to randomly extract cells
+    :param evidence_per_table: how many Evidences from the same table
+    :param column_per_table: how many cells for 1 Evidence
+    :param key_strategy: heuristic for selecting the key column. Can be 'first',
+                         'sensible' or None
 
-    :return: the list of the selected cells and the content of the headers
+    :return selected_cells: [ ['Totti', 128], ['Cassano', 103], ...]
+    :return selected_h_cells: ['name', 'scored_gol']
+    :return possible_pieces: the swappable cells for each header
     """
+
     # 0 for first table, 1 for second table, ...
     tbl_id = int(tbl.get_id().split('_')[1])
     try:
-        index, start_row, end_row = sub_relational_table(tbl, rng=rng,
-                                                         table_len=table_len,
-                                                         evidence_per_table=evidence_per_table)
+        # extract sub relational table
+        index, start_row, end_row = sub_relational_table(
+            tbl, rng=rng,
+            table_len=table_len,
+            evidence_per_table=evidence_per_table
+        )
     except TableException:
         raise
 
@@ -52,28 +57,27 @@ def relational_table(
     # from [start_i + 1,  end_i ]
 
     # TODO: refactor and put strategies in a function
-
     # randomly choose the evidence headers in the selected header
     if key_strategy == 'first':
         list_cols = [0] + rng.choice(len(tbl_headers.row),
-                                     columns_per_table - 1,
+                                     column_per_table - 1,
                                      replace=False)
     elif key_strategy == 'sensible':
         # start_row + 1 is passed to skip the header
         list_cols = [_key_sensible(tbl, tbl_headers.row, start_row + 1, end_row)] \
                     + rng.choice(len(tbl_headers.row),
-                                 columns_per_table - 1,
+                                 column_per_table - 1,
                                  replace=False)
     elif key_strategy == 'entity':
         # start_row + 1 is passed to skip the header
         list_cols = [_key_entity(tbl, tbl_headers.row, start_row + 1, end_row)] \
                     + rng.choice(len(tbl_headers.row),
-                                 columns_per_table - 1,
+                                 column_per_table - 1,
                                  replace=False)
     elif key_strategy == 'random':
         # randomly choose the evidence headers in the selected header
         list_cols = rng.choice(len(tbl_headers.row),
-                               columns_per_table,
+                               column_per_table,
                                replace=False)
     else:
         raise ValueError("Invalid choice of key detection strategy.")
@@ -86,16 +90,16 @@ def relational_table(
     if len(possible_rows) < evidence_per_table:
         raise TableException(TableExceptionType.NO_ENOUGH_ROW, tbl.page)
 
-    # TODO: don't raise exception, don't discard table if we only need positive
-    #  evidence pieces.
-
     # extract possible cells for generating negative samples
     # may crash if cell_id not in table
+    alternative_pieces = [[] for j in list_cols]
     try:
-        alternative_pieces = extract_alternative_pieces(list_cols, possible_rows, tbl,
+        alternative_pieces = extract_alternative_pieces(list_cols,
+                                                        possible_rows,
+                                                        tbl,
                                                         tbl_id)
     except KeyError:
-        raise TableException(TableExceptionType.ID_NOT_COMPLIANT, tbl.page)
+        pass  # not raise error because may use it for SUPPORT Evidence
 
     # selected rows from subtable possible rows
     list_rows = rng.choice(possible_rows,
@@ -111,10 +115,26 @@ def relational_table(
             except KeyError:
                 raise TableException(TableExceptionType.ID_NOT_COMPLIANT, tbl.page)
         selected_evidences.append(evidence)
+
     return selected_evidences, selected_h_cells, alternative_pieces
 
 
-def extract_alternative_pieces(list_cols, possible_rows, tbl, tbl_id):
+def extract_alternative_pieces(
+        list_cols: List[int],
+        possible_rows: List[int],
+        tbl: WikiTable,
+        tbl_id: int):
+    """
+    It extracts the possible cell that may be used for swapping in case of REFUTED claim
+
+    :param list_cols: the list of selected header cell indexes
+    :param possible_rows: the indexes of the rows in the subtable
+    :param tbl: the analyzed WikiTable
+    :param tbl_id: the id of the table inside the WikiPage
+
+    :return: the swappable cells for each header
+            possible_pieces = [ ['Totti', 'Cassano'], [128, 103] ]
+    """
     alternative_pieces = []
     for j in list_cols:
 

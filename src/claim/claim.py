@@ -33,26 +33,29 @@ class TextualClaim:
     # TODO: move this in claim.py
     @staticmethod
     def _claim_to_json(sample_id,
-                       claim):
+                       claim  # TextualClaim
+                       ):
         """
         Encodes an Evidence object and its corresponding TextualClaim in JSON format
 
         :param sample_id:
-        :param claim:
-        :return: a dict object ready to be serialized
+        :param claim: TextualClaim containing all the information
+
+        :return: json document for the claim
         """
-        content = []
-        context = {}
-        swapped = ''
-        true = ''
+
+        content = []  # list of content used as key in context
+        context = {}  # for each content element, the associated context
+        swapped = ''  # contains the swapped cell if REFUTED, otherwise -
+        true = ''  # contains the true pieces
+
+        # the evidence pieces used for generation the claim
         for piece in claim.evidence.evidence_pieces:
-
-            if piece.true_piece is not None:
-
+            if piece.true_piece is not None:  # REFUTED claim
                 piece_json = piece.true_piece
                 true += f'{piece_json.content}, {piece_json.cell_id} | '
                 swapped += f'{piece.content}, {piece.cell_id} | '
-            else:
+            else:  # SUPPORTED claim
                 piece_json = piece
                 true += f'{piece_json.content}, {piece_json.cell_id} | '
                 swapped += f'- | '

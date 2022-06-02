@@ -11,6 +11,7 @@ from logger import logger
 
 
 class TableExceptionType(Enum):
+    # Possible Errors inside the code
     NO_HEADERS = 'NO_HEADERS'  # No headers in the table
     NO_ENOUGH_COL = 'NO_ENOUGH_COL'  # Not enough column in the header
     ID_NOT_COMPLIANT = 'ID_NOT_COMPLIANT'  # The id of the cell is not compliant
@@ -22,6 +23,8 @@ class TableExceptionType(Enum):
 
 
 class TableException(Exception):
+    """Class to handle the possible errors"""
+
     def __init__(self,
                  error: TableExceptionType,
                  wikipage: str):
@@ -31,19 +34,18 @@ class TableException(Exception):
 
 
 def check_header_left(tbl: WikiTable
-                      ) -> \
-        Tuple[
-            List[Tuple[Cell, int, str]],
+                      ) \
+        -> Tuple[
+            List[Cell],
             int
         ]:
     """
     it scans all the rows to check if header on the left are present.
-    If present, it returns a list of tuple where each tuple contains
-     ( header_cell, header_row, header_content )
+    If present, it returns a list of header cells.
 
     :param tbl: table to be scanned WikiTable
 
-    :return header_index: list of tuple (header_cell, row_number, content)
+    :return header_index: list of left header_cell
     :return count: number of rows in the table
     """
     header_index = []
@@ -57,7 +59,8 @@ def check_header_left(tbl: WikiTable
             first_cell = row.get_row_cells()[0]
             if first_cell.is_header:
                 header_index.append(
-                    (first_cell, int(row.row_num), first_cell.content)
+                    first_cell
+                    # (first_cell, int(row.row_num), first_cell.content)
                 )
 
     return header_index, len(rows)
@@ -66,7 +69,8 @@ def check_header_left(tbl: WikiTable
 def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]]
                              ) -> List[Evidence]:
     """
-    It takes as argument the List of EvidencePieces created from a specific table.
+    It takes as argument the List of EvidencePieces. Each element of the list contains
+    the list of evidence pieces extracted from one table.
     It returns the list of Evidence object created from each set of EvidencePieces.
 
     :param evidence_from_table: each element is [EvidencePiece] got from the table
@@ -88,16 +92,28 @@ def create_negative_evidence(
         wrong_cell: int,
         rng: np.random.Generator
 ) -> List[Evidence]:
+    """
+    It takes as argument the List of EvidencePieces. Each element of the list contains
+    the list of evidence pieces extracted from one table.
+    It returns the list of Evidence object created from each set of EvidencePieces.
+    :param evidence_from_table: each element is [EvidencePiece] got from the table
+    :param wrong_cell: how many cells are swapped to create REFUTED evidences
+    :param rng: used to randomly swap the cells
+
+    :return: list of REFUTED Evidences
+    """
     negative_evidences = []
     for evidence_pieces in evidence_from_table:
-
+        # evidence_pieces: list of evidence pieces from one table
+        # the row already presents
         present_rows = set([piece.row for piece in evidence_pieces])
+        # the columns already presents
         present_cols = set([piece.column for piece in evidence_pieces])
 
-        if len(present_rows) > 1:
+        if len(present_rows) > 1:  # entity table
             already_present = list(present_cols)
             tbl_type = 'entity'
-        else:
+        else:  # relational table
             already_present = list(present_rows)
             tbl_type = 'relational'
 
@@ -105,6 +121,7 @@ def create_negative_evidence(
         pieces_replace = rng.choice(len(evidence_pieces),
                                     wrong_cell,
                                     replace=False)
+
         # for each selected cell make the swap
         for p in pieces_replace:
             # if not enough possible pieces raise error
@@ -120,15 +137,17 @@ def create_negative_evidence(
             # Select the cell to be swapped
             selected_cell = None
             for cell in evidence_pieces[p].possible_pieces:
+                # if the selected cell not already present
                 if cell.name != evidence_pieces[p].cell_id and not cell.is_header:
                     # Avoid possibility to randomly select same row/column
                     if tbl_type == 'relational' and cell.row_num not in already_present:
                         selected_cell = cell
                         already_present += [cell.row_num]
-                    if tbl_type == 'entity' and cell.col_num not in already_present:
+                        break
+                    elif tbl_type == 'entity' and cell.col_num not in already_present:
                         selected_cell = cell
                         already_present += [cell.col_num]
-                    break
+                        break
 
             if selected_cell is None:
                 raise TableException(
@@ -136,7 +155,7 @@ def create_negative_evidence(
                     evidence_pieces[p].wiki_page
                 )
 
-            # Add in the caption the correct cell
+            # Create the new SWAPPED evidence and insert the true in true_piece
             new_evidence = EvidencePiece(
                 evidence_pieces[p].wiki_page,
                 evidence_pieces[p].caption,

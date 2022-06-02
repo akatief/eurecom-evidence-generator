@@ -5,11 +5,12 @@ from feverous.utils.wiki_page import WikiTable
 
 from ..utils import TableExceptionType, TableException
 
+
 # TODO: use Cell header_left to get directly id and content
 #  instead of passing a tuple
 def entity_table(
         tbl: WikiTable,
-        header_left: List[Tuple[Cell, int, str]],
+        header_left: List[Cell],
         rng: np.random.Generator,
         column_per_table: int,
         evidence_per_table: int
@@ -24,7 +25,7 @@ def entity_table(
     :param evidence_per_table:
     :param column_per_table:
     :param tbl: one table present in the page
-    :param header_left: list of tuple. Each element contains the first left header
+    :param header_left: list of header left cells
     :param rng: random generator
     :return: the list of the selected cells and the content of the headers
     """
@@ -41,7 +42,7 @@ def entity_table(
 
     # Now we need to select the cells from the selected headers
     rows = np.array(tbl.get_rows())
-    i = selected_headers[:, 1].astype(int)
+    i = [int(h.row_num) for h in selected_headers]
 
     selected_rows = rows[i]  # take only the selected row
 
@@ -73,6 +74,5 @@ def entity_table(
 
     # TODO: maybe change function to remove numpy dependence
     selected_content = np.transpose(extracted_cell).tolist()
-    headers = selected_headers[:, 0]
-    # TODO: fix typing
-    return selected_content, headers, possible_pieces
+
+    return selected_content, selected_headers, possible_pieces

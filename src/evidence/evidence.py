@@ -8,7 +8,7 @@ from .utils import to_compact_text
 
 class EvidencePiece:
     """
-    Contains a single piece of information pertaining to some Evidence.
+    One single Evidence Piece. Multiple evidence pieces create an Evidence.
     """
 
     # TODO: add argument comments
@@ -20,7 +20,12 @@ class EvidencePiece:
                  possible_pieces: List[Cell],
                  true_piece=None):
         """
-        cell id => cell_<table_id>_<row_num>_<column_num>
+        :param wikipage: Name of the wikipage that contains this piece
+        :param caption: contain the title/sections table for the piece
+        :param cell: the extracted cell
+        :param header_cell: the associated header cell
+        :param possible_pieces: the possible pieces to swap for creating negative sentence
+        :param true_piece: None if SUPPORT, The correct EvidencePiece if REFUTES
         """
         self.true_piece = true_piece  # it contains the ture EvidencePiece if necessary
         self.possible_pieces = possible_pieces  # Contains the possible rows
@@ -37,13 +42,11 @@ class EvidencePiece:
         # contains the title and the sections of the table
         self.caption = get_context(caption, wikipage)
 
-        # Added for the links in the table
         self.cell = cell  # The object Cell
-        self.content = clean_content(cell.content)
+        self.content = clean_content(cell.content)  # The str content
 
-        # the content of the header
         self.header = header_cell  # The cell Header
-        self.header_content = clean_content(header_cell.content)
+        self.header_content = clean_content(header_cell.content)  # the str header content
 
     def __str__(self):
         return f"{self.content} " \
@@ -70,16 +73,14 @@ class EvidencePiece:
 # TODO: add argument comments
 class Evidence:
     """
-    Contains pieces of evidence along with the template giving meaning.
+    It is the Evidence used to generate the sentence
     """
 
     def __init__(self,
-                 evidence_pieces,
-                 label):
+                 evidence_pieces: List[EvidencePiece],
+                 label: str):
         """
-        :param evidence_pieces: List of List of pieces of evidence
-                                columns = sample header from the table
-                                row = total number of evidence
+        :param evidence_pieces: contain the EvidencePieces used in this Evidence
         :param label: Defines the claim as either "SUPPORTS" or "REFUTES"
         """
         self.evidence_pieces = evidence_pieces

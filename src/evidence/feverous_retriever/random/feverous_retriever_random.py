@@ -22,39 +22,51 @@ class FeverousRetrieverRandom(FeverousRetriever):
                  key_strategy=None,
                  seed=None,
                  verbose=False):
-        super().__init__(p_dataset, num_positive, num_negative, wrong_cell, table_per_page, evidence_per_table, column_per_table, seed, verbose)
+        super().__init__(p_dataset, num_positive, num_negative, wrong_cell,
+                         table_per_page, evidence_per_table, column_per_table, seed,
+                         verbose)
         self.key_strategy = key_strategy
 
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
-                                header_left: List[Tuple[str, int, str]],
+                                header_left: List[Cell],
                                 table_len: int
                                 ) -> List[List[EvidencePiece]]:
         """
-        :param tbl: scanned table WikiTable
-        :param header_left: list of tuple. Each element contains the first left header
-        :param table_len: number of row in the table, scalar
+        extract the EvidencePieces from one table. This functions does not directly
+        compute the Evidence because possible evidence with EvidencePieces coming from
+        different tables.
 
-        :return: list of evidences from this table
+        :param tbl: WikiTable to scan
+        :param header_left: list of left header cells
+        :param table_len: number of rows in the table, scalar
+
+        :return: a list of lists of EvidencePiece objects
         """
         # returns multiple Row that are headers
         headers = tbl.get_header_rows()
 
-        # no headers in the table
+        # no headers at all in the table
         if len(headers) == 0 and len(header_left) == 0:
             raise TableException(TableExceptionType.NO_HEADERS, tbl.page)
 
+        # not enough columns in the Relational table
         if len(headers) != 0 and len(headers[0].row) <= self.column_per_table:
+            raise TableException(TableExceptionType.NO_ENOUGH_COL, tbl.page)
+        # not enough columns in the entity table
+        if len(header_left) != 0 and len(header_left) <= self.column_per_table:
             raise TableException(TableExceptionType.NO_ENOUGH_COL, tbl.page)
 
         try:
+            # extract the evidencePieces with the random strategy
             output = self.random_strategy(tbl,
                                           header_left,
                                           table_len)
         except TableException:
-            raise
+            raise  # propagate up the TableException
 
         selected_cells, selected_h_cells, possible_pieces = output
+
         evidences = []
         for evidence in selected_cells:
             local_evidences = []
@@ -67,32 +79,34 @@ class FeverousRetrieverRandom(FeverousRetriever):
                                   possible_pieces[i]
                                   )
                 )
-
             evidences.append(local_evidences)
 
         return evidences
 
     def random_strategy(self,
                         tbl: WikiTable,
-                        header_left: List[Tuple[str, int, str]],
+                        header_left: List[Cell],
                         table_len: int,
-    ) -> Tuple[
+                        ) -> Tuple[
         List[List[Cell]],
         List[Cell],
         List[List[Cell]]
     ]:
         """
-        It returns the list of evidences extracted from the table.
-        the length of the list depends on "evidence_per_table"
+        The strategy is different depending on the type of table is analyzed.
+        The different strategies are implemented in the utils of the random package.
         Example:
             selected_content = [['Totti', 128], ['Cassano', 103], ...]
             headers = ['name', 'scored_gol']
+            possible_pieces = [ ['Totti', 'Cassano'], [128, 103]]
 
-        :param tbl: one table present in the page
-        :param header_left: list of tuple. Each element contains the first left header
+        :param tbl: the analyzed table
+        :param header_left: list of header left cells
         :param table_len: len of the table
 
-        :return: selected_content, headers
+        :return selected_cells: [ ['Totti', 128], ['Cassano', 103], ...]
+        :return selected_h_cells: ['name', 'scored_gol']
+        :return possible_pieces: the swappable cells for each header
         """
 
         try:
