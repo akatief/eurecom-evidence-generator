@@ -5,6 +5,7 @@ import hydra
 # TODO: try to understand because if it is not used you get error
 import tensorflow_text
 
+from claim import TextualClaim
 from src.claim import FeverousGenerator, ToTToGenerator
 
 from src.pipeline import ClaimGeneratorPipeline
@@ -13,26 +14,40 @@ from src.evidence import FeverousRetrieverRandom
 
 @hydra.main(config_path="../src/config/", config_name="config_pipeline.yaml")
 def main(cfg):
-    retriever = FeverousRetrieverRandom(cfg.main.data_path,
-                                        cfg.num_evidence,
-                                        cfg.table_per_page,
-                                        cfg.evidence_per_table,
-                                        cfg.column_per_table,
-                                        cfg.seed
-                                        )
+    retrievers = [FeverousRetrieverRandom(p_dataset=cfg.main.data_path,
+                                          num_positive=cfg.positive_evidence,
+                                          num_negative=cfg.negative_evidence,
+                                          wrong_cell=cfg.wrong_cell,
+                                          table_per_page=cfg.table_per_page,
+                                          evidence_per_table=cfg.evidence_per_table,
+                                          column_per_table=cfg.column_per_table,
+                                          seed=cfg.seed,
+                                          key_strategy=strat
+                                          )
+                  # for strat in ['entity', 'random']
+                  for strat in ['random']
+                  ]
 
-    generator = FeverousGenerator(encoding='compact',
-                                  model_path=cfg.main.model_path)
-    #
+    generator1 = FeverousGenerator(encoding='totto',
+                                   model_path=cfg.main.model_path,)
+
+    # generator2 = ToTToGenerator(
+    # encoding='totto', model_path='../models/exported_totto_large/1648208035'
+    # )
+    # generator3 = ToTToGenerator(encoding='compact',
+    #                             model_path=cfg.main.model_path,
+    #                             verbose=True)
     # generator = ToTToGenerator(encoding='totto',
     #                            model_path=cfg.main.model_path)
 
-    pipeline = ClaimGeneratorPipeline([retriever, generator])
-    claims = pipeline.generate(
-        None,  # Right now, FeverousRetriever doesn't support an input table
-        header_content=cfg.header_content)
-    json_evidence = [c.json for c in claims]
+    generators = [generator1]
 
+    pipeline = ClaimGeneratorPipeline([retrievers, generators])
+
+    # Right now, FeverousRetriever doesn't support an input table
+    claims = pipeline.generate()
+
+    json_evidence = TextualClaim.to_json(claims)
     with open('data.json', 'w', encoding='utf-8') as f:
         json.dump(json_evidence, f, ensure_ascii=False, indent=4)
 

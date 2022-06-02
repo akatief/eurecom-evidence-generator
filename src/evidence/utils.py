@@ -1,7 +1,10 @@
 import re
+from typing import List
+
+from evidence import EvidencePiece
 
 
-def clean_content(content):
+def clean_content(content: str):
     """
     Cleans a cell content of formatting symbols introduced in FEVEROUS dataset
 
@@ -24,7 +27,7 @@ def clean_content(content):
     return content
 
 
-def to_compact_text(evidence_pieces):
+def to_compact_text(evidence_pieces: List[EvidencePiece]):
     """
     Converts evidence objects into strings the model can elaborate to generate
      a textual claim
@@ -39,17 +42,17 @@ def to_compact_text(evidence_pieces):
     return ' | '.join(textual_pieces)
 
 
-def to_totto_text(evidence_pieces):
+def to_totto_text(evidence_pieces: List[EvidencePiece]):
     """
     Converts evidence objects into strings
-     the model can elaborate to generate a textual claim
+    the model can elaborate to generate a textual claim
 
     :return: text encoded in totto form.
              eg: <page_title> list of governors of south carolina </page_title>
               <section_title> governors under the constitution of 1868 </section_title>
               <table> <cell> 76 </cell>
               <cell> daniel henry chamberlain </cell>
-               <cell> december 1, 1874 </cell> </table>
+              <cell> december 1, 1874 </cell> </table>
     """
     pieces = evidence_pieces
     pieces.sort()
@@ -88,3 +91,16 @@ def to_totto_text(evidence_pieces):
 
     text += c_end + r_end + t_end
     return text
+
+
+def get_context(caption: List,
+                title: str) -> List[str]:
+    # the caption it has already been generated
+    if isinstance(caption[0], str):
+        return caption
+
+    return [
+        f'{title}{s.get_id()}' if str(s.get_id()).startswith('_')
+        else f'{title}_{s.get_id()}'
+        for s in caption
+    ]

@@ -12,8 +12,13 @@ from ..evidence import Evidence
 from ..evidence import EvidencePiece
 from ..evidence_retriever import EvidenceRetriever
 
-from .utils import TableException, TableExceptionType, check_header_left, \
-    create_positive_evidence
+from .utils import TableException
+from .utils import TableExceptionType
+from .utils import check_header_left
+from .utils import create_positive_evidence
+from .utils import create_negative_evidence
+
+from copy import deepcopy
 
 
 class FeverousRetriever(EvidenceRetriever, ABC):
@@ -23,39 +28,48 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
     def __init__(self,
                  p_dataset: str,
-                 num_evidence: int,
-                 table_per_page=1,
-                 evidence_per_table=1,
-                 column_per_table=2,
-                 seed=None,
-                 verbose=False):
+                 num_positive: int,
+                 num_negative: int,
+                 wrong_cell: int,
+                 table_per_page: int = 1,
+                 evidence_per_table: int = 1,
+                 column_per_table: int = 2,
+                 seed: int = None,
+                 verbose: bool = False):
         """
+
         :param p_dataset: path of the dataset
-        :param num_evidence: how many Evidences you want to get
+        :param num_positive: num of SUPPORTS evidence to generate
+        :param num_negative: num of REFUTED evidence to generate
+        :param wrong_cell: how many cells are swapped to create REFUTED evidences
         :param table_per_page: how many tables per page you want to scan
         :param evidence_per_table: how many Evidences from the same table
         :param column_per_table: how many cells for 1 Evidence
         :param seed: used for reproducibility
-        :param verbose: if True, prints additional info during retrieval
+        :param verbose:if True, prints additional info during retrieval
         """
-        super().__init__(n_pieces=num_evidence)
+        super().__init__(n_pieces=num_positive, verbose=verbose)
 
         self.db = FeverousDB(p_dataset)  # Databes that contains the entire database
         self.path_db = p_dataset  # path used for extracting the dataset
-        self.ids = list(self.db.get_non_empty_doc_ids())  # to be changed
+        self.ids = list(self.db.get_non_empty_doc_ids())
 
-        self.p_dataset = p_dataset
-        self.num_evidence = num_evidence
+        self.num_positive = num_positive
+        self.num_negative = num_negative
+
+        self.column_per_table = column_per_table
+        self.wrong_cell = wrong_cell
+
         self.table_per_page = table_per_page
         self.evidence_per_table = evidence_per_table
-        self.column_per_table = column_per_table
+
         self.seed = seed
-        self.verbose = verbose
+        # Random generator for reproducibility purposes
+        self.rng = np.random.default_rng(self.seed)
 
     @property
-    def retrieve(
-            self
-    ) -> List[Evidence]:
+    def retrieve(self
+                 ) -> List[Evidence]:
         """
         Scans whole FEVEROUS dataset and returns list of Evidence objects.
         It extracts as many evidence as specified by num_evidence.
@@ -86,22 +100,17 @@ class FeverousRetriever(EvidenceRetriever, ABC):
             2.1 randomly select #table_per_page from the available tables
             2.2 extract the #num_evidence evidences
 
-        :return: a list of Evidence objects
+        :return: a list of Evidence objects composed of positive + negative
         """
-        # Random generator for reproducibility purposes
-        rng = np.random.default_rng(self.seed)
-        rng.shuffle(self.ids)
+        self.rng.shuffle(self.ids)  # shuffle the ids
 
-        discarded_ids = dict()
-        discarded_ids[TableExceptionType.NO_HEADERS.value] = []
-        discarded_ids[TableExceptionType.NO_ENOUGH_ROW.value] = []
-        discarded_ids[TableExceptionType.SUBTABLE_NOT_FOUND.value] = []
-        discarded_ids[TableExceptionType.ID_NOT_COMPLIANT.value] = []
-        discarded_ids[TableExceptionType.NO_ENOUGH_COL.value] = []
+        discarded_ids = dict()  # used to understand how many discarded pages
         discarded_ids[TableExceptionType.NO_ENOUGH_TBL.value] = []
+        discarded_ids[TableExceptionType.NO_EXTRACTED_TBL.value] = []
 
-        total_evidences = []
-        for page_name in self.ids[:]:
+        total_positive_evidences = []
+        total_negative_evidences = []
+        for page_name in self.ids:
             if self.verbose:
                 logger.info(f" wikipage: {page_name}".encode("utf-8"))
 
@@ -114,59 +123,80 @@ class FeverousRetriever(EvidenceRetriever, ABC):
             # Get all the tables
             tables = wiki_page.get_tables()
 
-            # Todo: add it to the list
             if len(tables) < self.table_per_page:
                 discarded_ids["NO_ENOUGH_TBL"] += [page_name]
                 continue
 
-            # Shuffle the tables
-            rng.shuffle(tables)
-
             try:
-                evidences = self.analyze_tables(rng, tables, wiki_page)
-                total_evidences = total_evidences + evidences
+                # analyze the tables of the wiki page
+                pos_evidences, neg_evidences = self.analyze_tables(tables, wiki_page)
             except TableException as e:
                 discarded_ids[e.error[0].value] += [e.error[1]]
+            else:
+                # compute only if no error
+                if len(total_positive_evidences) < self.num_positive:
+                    total_positive_evidences = total_positive_evidences + pos_evidences
 
-            if len(total_evidences) >= self.num_evidence:
-                total_evidences = total_evidences[:self.num_evidence]
+                if len(total_negative_evidences) < self.num_negative:
+                    total_negative_evidences = total_negative_evidences + neg_evidences
+
+            if len(total_positive_evidences) >= self.num_positive and \
+                    len(total_negative_evidences) >= self.num_negative:
+                total_positive_evidences = total_positive_evidences[:self.num_positive]
+                total_negative_evidences = total_negative_evidences[:self.num_negative]
+
                 break
 
         if self.verbose:
             logger.info(
-                f" Evidences retrieved {len(total_evidences)}/{self.num_evidence}"
+                f" Positive Evidences retrieved"
+                f" {len(total_positive_evidences)}/{self.num_positive}"
             )
-            logger.info(f" Id not used {len(discarded_ids)}/{len(self.ids)}")
-            logger.info(f' Id error NO_HEADERS  {len(discarded_ids["NO_HEADERS"])}')
-            logger.info(f' Id error NO_ENOUGH_ROW  {len(discarded_ids["NO_ENOUGH_ROW"])}')
-            logger.info(f' Id error NO_ENOUGH_COL  {len(discarded_ids["NO_ENOUGH_ROW"])}')
-            logger.info(f' Id error SUBTABLE_NOT_FOUND '
-                        f'{len(discarded_ids["SUBTABLE_NOT_FOUND"])}')
-            logger.info(f' Id error ID_NOT_COMPLIANT '
-                        f'{len(discarded_ids["ID_NOT_COMPLIANT"])}')
+            logger.info(
+                f" Negative Evidences retrieved"
+                f" {len(total_negative_evidences)}/{self.num_negative}"
+            )
 
-        return total_evidences
+            logger.info(f" Id not used {len(discarded_ids)}/{len(self.ids)}")
+
+            logger.info(f' Id error NO_ENOUGH_TBL  {len(discarded_ids["NO_ENOUGH_TBL"])}')
+            logger.info(f' Id error NO_EXTRACTED_TBL  '
+                        f'{len(discarded_ids["NO_EXTRACTED_TBL"])}')
+
+        return total_positive_evidences + total_negative_evidences
 
     def analyze_tables(self,
-                       rng: np.random.Generator,
                        tables: List,
                        wiki_page: WikiPage,
-                       ) -> List:
+                       ) -> Tuple[List[Evidence], List[Evidence]]:
+        """
+        it returns the evidence extracted from the tables inside the wikipage
+        positive_evidences and negative_evidences.
 
-        # for each table in wiki_page
-        for i, tbl in enumerate(tables):
+        :param tables: the wiki page tables to analyze
+        :param wiki_page: the current WikiPage object
 
-            # Check if already scanned enough table from wikipage
-            if i >= self.table_per_page:
+        :return: the list of SUPPORT evidence and the list of REFUTED elements
+        """
+        # Shuffle the tables
+        self.rng.shuffle(tables)
+
+        positive_evidences = []
+        negative_evidences = []
+        count_extracted = 0  # how many table we have successfully extracted.
+
+        for tbl in tables:  # for each table in wiki_page
+
+            # Check how many evidences we have extracted from this wikipage
+            if count_extracted >= self.table_per_page:
                 break
 
             # get Table id
             tbl_id = int(tbl.get_id().split('_')[1])
 
             # get caption
-            caption = [str(s) for s in
+            caption = [s for s in
                        wiki_page.get_context(f'table_caption_{tbl_id}')]
-
             # Add the caption to the table
             tbl.caption = caption
 
@@ -177,46 +207,49 @@ class FeverousRetriever(EvidenceRetriever, ABC):
             try:
                 evidence_from_table = self.get_evidence_from_table(tbl,
                                                                    header_left,
-                                                                   table_len,
-                                                                   rng=rng)
+                                                                   table_len)
             except TableException:
-                raise
+                pass  # not raise because want to scan the other tables
 
-            else:
-                positive_evidences = create_positive_evidence(evidence_from_table,
-                                                              self.column_per_table,
-                                                              self.seed)
+            else:  # if no exception has occurred
+                count_extracted += 1  # successfully extracted
+                positive_evidences += create_positive_evidence(
+                    deepcopy(evidence_from_table)
+                )
 
-                return positive_evidences
+                try:
+                    negative_evidences += create_negative_evidence(
+                        deepcopy(evidence_from_table),  # pass a copy
+                        self.wrong_cell,
+                        self.rng)
+                except TableException:
+                    # if not possible to create negative, continue with other tables
+                    pass
+
+        # Not enough evidence extracted from all the tables
+        if count_extracted < self.table_per_page:
+            raise TableException(
+                TableExceptionType.NO_ENOUGH_TBL,
+                wiki_page.title.get_id()
+            )
+
+        return positive_evidences, negative_evidences
 
     @abstractmethod
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
-                                header_left: List[Tuple[Cell, int, str]],
-                                table_len: int,
-                                if_header=True,
-                                rng=None) -> List[List[EvidencePiece]]:
+                                header_left: List[Cell],
+                                table_len: int
+                                ) -> List[List[EvidencePiece]]:
         """
-        it is used to extract the "meaningful" attributes from one table at time.
-        "Meaningful" is defined by the target application.
+        extract the EvidencePieces from one table. This functions does not directly
+        compute the Evidence because possible evidence with EvidencePieces coming from
+        different tables.
 
-        Example:
-        evidences =
-            [
-                [
-                    EvidencePiece('Totti', 'name'),
-                    EvidencePiece(128, 'scored_gol)
-                ],
-                [
-                    ...
-                ],
-                ...
-            ]
+        :param tbl: WikiTable to scan
+        :param header_left: list of left header cells
+        :param table_len: number of rows in the table, scalar
 
-        :param tbl: scanned table WikiTable
-        :param header_left: list of tuple. Each element contains the first left header
-        :param table_len: number of row in the table, scalar
-        :param if_header: add or not add the header in the output Boolean
-        :param rng: Random numpy generator
+        :return: a list of lists of EvidencePiece objects
         """
-        pass
+        pass  # abstract method

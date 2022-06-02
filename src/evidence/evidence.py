@@ -1,36 +1,53 @@
+from types import NoneType
+from typing import List
+from typing import Union
+from feverous.utils.wiki_table import Cell
 from .utils import clean_content
+from .utils import get_context
 from .utils import to_totto_text
 from .utils import to_compact_text
 
 
 class EvidencePiece:
     """
-    Contains a single piece of information pertaining to some Evidence.
+    One single Evidence Piece. Multiple evidence pieces create an Evidence.
     """
-
-    # TODO: make it more general, not bound to table structure
     # TODO: add argument comments
-    def __init__(self, wikipage, caption, cell, header_cell):
+    def __init__(self,
+                 wikipage: str,
+                 caption: List,
+                 cell: Cell,
+                 header_cell: Cell,
+                 possible_pieces: List[Cell],
+                 true_piece: Union[NoneType, 'EvidencePiece'] = None):
         """
-        cell id => cell_<table_id>_<row_num>_<column_num>
+        :param wikipage: Name of the wikipage that contains this piece
+        :param caption: contain the title/sections table for the piece
+        :param cell: the extracted cell
+        :param header_cell: the associated header cell
+        :param possible_pieces: the possible pieces to swap for creating negative sentence
+        :param true_piece: None if SUPPORT, The correct EvidencePiece if REFUTES
         """
-        self.wiki_page = wikipage
-        self.cell_id = cell.name
-        self.cell = cell
+        self.true_piece = true_piece  # it contains the ture EvidencePiece if necessary
+        self.possible_pieces = possible_pieces  # Contains the possible rows
+
+        self.wiki_page = wikipage  # the WikiPage name
+        self.cell_id = cell.name  # the id of the cells
+
         # TODO: error because some tables may have more headers on the left
         #  Universal Storage Platform, discontinued
         self.table = int(self.cell_id.split('_')[1])
         self.row = int(self.cell_id.split('_')[2])
         self.column = int(self.cell_id.split('_')[3])
 
-        self.caption = caption
+        # contains the title and the sections of the table
+        self.caption = get_context(caption, wikipage)
 
-        self.header_content = clean_content(header_cell.content)
-        self.header = header_cell
+        self.cell = cell  # The object Cell
+        self.content = clean_content(cell.content)  # The str content
 
-        # Added for the links in the table
-        content = cell.content
-        self.content = clean_content(content)
+        self.header = header_cell  # The cell Header
+        self.header_content = clean_content(header_cell.content)  # the str header content
 
     def __str__(self):
         return f"{self.content} " \
@@ -57,23 +74,17 @@ class EvidencePiece:
 # TODO: add argument comments
 class Evidence:
     """
-    Contains pieces of evidence along with the template giving meaning.
+    It is the Evidence used to generate the sentence
     """
 
     def __init__(self,
-                 evidence_pieces,
-                 column_per_table,
-                 label,
-                 seed):
+                 evidence_pieces: List[EvidencePiece],
+                 label: str):
         """
-        :param evidence_pieces: List of List of pieces of evidence
-                                columns = sample header from the table
-                                row = total number of evidence
+        :param evidence_pieces: contain the EvidencePieces used in this Evidence
         :param label: Defines the claim as either "SUPPORTS" or "REFUTES"
         """
         self.evidence_pieces = evidence_pieces
-        self.column_per_table = column_per_table
-        self.seed = seed
         self.label = label
 
     def __str__(self):
@@ -83,13 +94,14 @@ class Evidence:
 
         return my_string + self.label
 
-    def to_text(self, encoding='compact'):
+    def to_text(self,
+                encoding: str = 'compact'):
         """
         Converts evidence objects into strings the model can elaborate
         to generate a textual claim.
         Uses selected encoding. Possible choices are 'compact' and 'totto'.
 
-        :param encoding:
+        :param encoding: encoding to use
         :return: text encoded in chosen form.
         """
         if encoding == 'compact':
