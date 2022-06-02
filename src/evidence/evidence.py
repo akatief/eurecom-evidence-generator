@@ -1,4 +1,3 @@
-from types import NoneType
 from typing import List
 from typing import Union
 from feverous.utils.wiki_table import Cell
@@ -19,7 +18,7 @@ class EvidencePiece:
                  cell: Cell,
                  header_cell: Cell,
                  possible_pieces: List[Cell],
-                 true_piece: Union[NoneType, 'EvidencePiece'] = None):
+                 true_piece: Union[None, 'EvidencePiece'] = None):
         """
         :param wikipage: Name of the wikipage that contains this piece
         :param caption: contain the title/sections table for the piece
