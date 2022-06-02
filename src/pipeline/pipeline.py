@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import List, Any
 
 
 class PipelineElement:
@@ -18,6 +19,7 @@ class PipelineElement:
     def __iter__(self):
         return iter([self])
 
+
 class ClaimGeneratorPipeline:
     """
     Runs a claim generation task starting from raw data all the way to textual claims.
@@ -27,11 +29,13 @@ class ClaimGeneratorPipeline:
     An element output is the input of the next.
     """
 
-    def __init__(self, elements):
+    def __init__(self,
+                 elements: List[PipelineElement]):
         self.elements = elements
 
     @abstractmethod
-    def generate(self, input=None):
+    def generate(self,
+                 input: Any = None):
         """
         Runs the whole pipeline on the provided table.
 

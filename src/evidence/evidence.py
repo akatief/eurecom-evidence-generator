@@ -1,4 +1,6 @@
+from types import NoneType
 from typing import List
+from typing import Union
 from feverous.utils.wiki_table import Cell
 from .utils import clean_content
 from .utils import get_context
@@ -10,7 +12,6 @@ class EvidencePiece:
     """
     One single Evidence Piece. Multiple evidence pieces create an Evidence.
     """
-
     # TODO: add argument comments
     def __init__(self,
                  wikipage: str,
@@ -18,7 +19,7 @@ class EvidencePiece:
                  cell: Cell,
                  header_cell: Cell,
                  possible_pieces: List[Cell],
-                 true_piece=None):
+                 true_piece: Union[NoneType, 'EvidencePiece'] = None):
         """
         :param wikipage: Name of the wikipage that contains this piece
         :param caption: contain the title/sections table for the piece
@@ -93,7 +94,8 @@ class Evidence:
 
         return my_string + self.label
 
-    def to_text(self, encoding='compact'):
+    def to_text(self,
+                encoding: str = 'compact'):
         """
         Converts evidence objects into strings the model can elaborate
         to generate a textual claim.

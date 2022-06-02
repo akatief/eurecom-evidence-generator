@@ -1,8 +1,10 @@
 import re
 from typing import List
 
+from evidence import EvidencePiece
 
-def clean_content(content):
+
+def clean_content(content: str):
     """
     Cleans a cell content of formatting symbols introduced in FEVEROUS dataset
 
@@ -25,7 +27,7 @@ def clean_content(content):
     return content
 
 
-def to_compact_text(evidence_pieces):
+def to_compact_text(evidence_pieces: List[EvidencePiece]):
     """
     Converts evidence objects into strings the model can elaborate to generate
      a textual claim
@@ -40,7 +42,7 @@ def to_compact_text(evidence_pieces):
     return ' | '.join(textual_pieces)
 
 
-def to_totto_text(evidence_pieces):
+def to_totto_text(evidence_pieces: List[EvidencePiece]):
     """
     Converts evidence objects into strings
     the model can elaborate to generate a textual claim
@@ -91,10 +93,8 @@ def to_totto_text(evidence_pieces):
     return text
 
 
-def get_context(
-        caption: List,
-        title: str
-) -> List[str]:
+def get_context(caption: List,
+                title: str) -> List[str]:
     # the caption it has already been generated
     if isinstance(caption[0], str):
         return caption

@@ -9,8 +9,8 @@ class EvidenceRetriever(PipelineElement):
     """
 
     def __init__(self,
-                 n_pieces,
-                 verbose=False):
+                 n_pieces: int,
+                 verbose: bool = False):
         """
         :param n_pieces: Number of pieces of evidence to be returned.
         :param verbose: if True prints additional debug messages

@@ -34,11 +34,7 @@ class TableException(Exception):
 
 
 def check_header_left(tbl: WikiTable
-                      ) \
-        -> Tuple[
-            List[Cell],
-            int
-        ]:
+                      ) -> Tuple[List[Cell], int]:
     """
     it scans all the rows to check if header on the left are present.
     If present, it returns a list of header cells.
@@ -87,11 +83,10 @@ def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]]
     return positive_evidences
 
 
-def create_negative_evidence(
-        evidence_from_table: List[List[EvidencePiece]],
-        wrong_cell: int,
-        rng: np.random.Generator
-) -> List[Evidence]:
+def create_negative_evidence(evidence_from_table: List[List[EvidencePiece]],
+                             wrong_cell: int,
+                             rng: np.random.Generator
+                             ) -> List[Evidence]:
     """
     It takes as argument the List of EvidencePieces. Each element of the list contains
     the list of evidence pieces extracted from one table.
