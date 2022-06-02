@@ -104,9 +104,9 @@ class Evidence:
         :return: text encoded in chosen form.
         """
         if encoding == 'compact':
-            return self.to_compact_text(self.evidence_pieces)
+            return self.to_compact_text()
         elif encoding == 'totto':
-            return self.to_totto_text(self.evidence_pieces)
+            return self.to_totto_text()
         else:
             raise ValueError('Invalid choice of encoding')
 
