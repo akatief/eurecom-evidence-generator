@@ -31,11 +31,11 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                  num_positive: int,
                  num_negative: int,
                  wrong_cell: int,
-                 table_per_page=1,
-                 evidence_per_table=1,
-                 column_per_table=2,
-                 seed=None,
-                 verbose=False):
+                 table_per_page: int = 1,
+                 evidence_per_table: int = 1,
+                 column_per_table: int = 2,
+                 seed: int = None,
+                 verbose: bool = False):
         """
 
         :param p_dataset: path of the dataset
@@ -68,9 +68,8 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         self.rng = np.random.default_rng(self.seed)
 
     @property
-    def retrieve(
-            self
-    ) -> List[Evidence]:
+    def retrieve(self
+                 ) -> List[Evidence]:
         """
         Scans whole FEVEROUS dataset and returns list of Evidence objects.
         It extracts as many evidence as specified by num_evidence.
@@ -169,9 +168,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
     def analyze_tables(self,
                        tables: List,
                        wiki_page: WikiPage,
-                       ) -> Tuple[
-        List[Evidence], List[Evidence]
-    ]:
+                       ) -> Tuple[List[Evidence], List[Evidence]]:
         """
         it returns the evidence extracted from the tables inside the wikipage
         positive_evidences and negative_evidences.

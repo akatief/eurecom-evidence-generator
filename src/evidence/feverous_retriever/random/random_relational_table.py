@@ -1,24 +1,20 @@
-from typing import List, Tuple
+from typing import List, Tuple, Any
 import numpy as np
 import spacy
 from feverous.utils.wiki_table import Cell
+from feverous.utils.wiki_table import Row
 from feverous.utils.wiki_page import WikiTable
+from ..utils import TableException
+from ..utils import TableExceptionType
 
-from ..utils import TableException, TableExceptionType
 
-
-def relational_table(
-        tbl: WikiTable,
-        table_len: int,
-        rng: np.random.Generator,
-        evidence_per_table: int,
-        column_per_table: int,
-        key_strategy='random'
-) -> Tuple[
-    List[List[Cell]],
-    List[Cell],
-    List[List[Cell]]
-]:
+def relational_table(tbl: WikiTable,
+                     table_len: int,
+                     rng: np.random.Generator,
+                     evidence_per_table: int,
+                     column_per_table: int,
+                     key_strategy: str = 'random'
+                     ) -> Tuple[ List[List[Cell]], List[Cell], List[List[Cell]] ]:
     """
     RANDOMLY  extract the evidence from the relational table.
     Example:
@@ -119,11 +115,10 @@ def relational_table(
     return selected_evidences, selected_h_cells, alternative_pieces
 
 
-def extract_alternative_pieces(
-        list_cols: List[int],
-        possible_rows: List[int],
-        tbl: WikiTable,
-        tbl_id: int):
+def extract_alternative_pieces(list_cols: List[int],
+                               possible_rows: List[int],
+                               tbl: WikiTable,
+                               tbl_id: int):
     """
     It extracts the possible cell that may be used for swapping in case of REFUTED claim
 
@@ -146,12 +141,11 @@ def extract_alternative_pieces(
     return alternative_pieces
 
 
-def sub_relational_table(
-        tbl: WikiTable,
-        rng: np.random.Generator,
-        table_len: int,
-        evidence_per_table: int
-) -> Tuple[int, int, int]:
+def sub_relational_table(tbl: WikiTable,
+                         rng: np.random.Generator,
+                         table_len: int,
+                         evidence_per_table: int
+                         ) -> Tuple[int, int, int]:
     """
     Given a table, it randomly finds a subtable which is used to sample the evidences
 
@@ -210,7 +204,10 @@ def sub_relational_table(
     return selected_h_index, selected_h, max_row_header
 
 
-def _key_sensible(table, header, start_row, end_row):
+def _key_sensible(table: WikiTable,
+                  header: Row,
+                  start_row: int,
+                  end_row: int):
     """
     Check table for all columns without duplicates and select one
     using heuristic based on data type and distance from left column
@@ -244,7 +241,10 @@ def _key_sensible(table, header, start_row, end_row):
 
 
 # TODO: refactor to avoid duplicating code
-def _key_entity(table, header, start_row, end_row):
+def _key_entity(table: WikiTable,
+                header: Row,
+                start_row: int,
+                end_row: int):
     """
     Check table for all columns without duplicates and select one
     using heuristic based on named entity recognition and distance
@@ -277,7 +277,7 @@ def _key_entity(table, header, start_row, end_row):
     return np.argmax(candidates_scores)
 
 
-def _get_type(n):
+def _get_type(n: Any):
     if n.isdigit():
         return int
     else:
@@ -288,7 +288,7 @@ def _get_type(n):
             return str
 
 
-def _col_type(types):
+def _col_type(types: List[Any]):
     col_type = int
     for t in types:
         if col_type is int and (t is float or t is str):
@@ -300,7 +300,8 @@ def _col_type(types):
     return col_type
 
 
-def _get_type_score(col, type):
+def _get_type_score(col: int,
+                    type: Any):
     """
     Returns a score based on column position in table
     and type. The closer a column is to the left border
@@ -316,7 +317,8 @@ def _get_type_score(col, type):
     return 1 / (col + 1) * type_mult
 
 
-def _get_entity_score(col, labels):
+def _get_entity_score(col: int,
+                      labels: List[str]):
     """
     Returns a score based on column position in table
     and Entity. The closer a column is to the left border
