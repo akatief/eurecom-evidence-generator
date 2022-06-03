@@ -1,6 +1,7 @@
 from typing import List, Tuple
 from feverous.utils.wiki_table import Cell
 from feverous.utils.wiki_page import WikiTable
+from ....logger import logger
 
 from ...evidence import EvidencePiece
 from ..feverous_retriever import FeverousRetriever
@@ -112,13 +113,16 @@ class FeverousRetrieverRandom(FeverousRetriever):
         try:
             # Not header on the left
             if len(header_left) == 0:
-                return relational_table(tbl,
-                                        table_len,
-                                        self.rng,
-                                        self.evidence_per_table,
-                                        self.column_per_table,
-                                        self.key_strategy
-                                        )
+                selected_evidences, selected_h_cells, alternative_pieces = relational_table(tbl,
+                                                                                            table_len,
+                                                                                            self.rng,
+                                                                                            self.evidence_per_table,
+                                                                                            self.column_per_table,
+                                                                                            self.key_strategy
+                                                                                            )
+                if self.verbose:
+                    logger.info(f"Page: {tbl.page} {tbl.get_id()} Selected headers: {[str(cell) for cell in selected_h_cells]}".encode("utf-8"))
+                return selected_evidences, selected_h_cells, alternative_pieces
             else:
                 return entity_table(tbl,
                                     header_left,

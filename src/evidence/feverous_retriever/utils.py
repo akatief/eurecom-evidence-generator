@@ -7,7 +7,7 @@ from feverous.utils.wiki_table import Cell
 from typing import List
 from typing import Tuple
 
-from logger import logger
+from ...logger import logger
 
 
 class TableExceptionType(Enum):

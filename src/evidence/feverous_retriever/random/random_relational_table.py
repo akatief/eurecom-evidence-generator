@@ -54,29 +54,15 @@ def relational_table(tbl: WikiTable,
 
     # TODO: refactor and put strategies in a function
     # randomly choose the evidence headers in the selected header
-    if key_strategy == 'first':
-        list_cols = [0] + rng.choice(len(tbl_headers.row),
-                                     column_per_table - 1,
-                                     replace=False)
-    elif key_strategy == 'sensible':
-        # start_row + 1 is passed to skip the header
-        list_cols = [_key_sensible(tbl, tbl_headers.row, start_row + 1, end_row)] \
-                    + rng.choice(len(tbl_headers.row),
-                                 column_per_table - 1,
-                                 replace=False)
-    elif key_strategy == 'entity':
-        # start_row + 1 is passed to skip the header
-        list_cols = [_key_entity(tbl, tbl_headers.row, start_row + 1, end_row)] \
-                    + rng.choice(len(tbl_headers.row),
-                                 column_per_table - 1,
-                                 replace=False)
-    elif key_strategy == 'random':
-        # randomly choose the evidence headers in the selected header
-        list_cols = rng.choice(len(tbl_headers.row),
-                               column_per_table,
-                               replace=False)
-    else:
-        raise ValueError("Invalid choice of key detection strategy.")
+    list_cols = _get_cols_with_strategy(key_strategy=key_strategy,
+                                        rng=rng,
+                                        tbl=tbl,
+                                        tbl_headers_len=len(tbl_headers.row),
+                                        column_per_table=column_per_table,
+                                        start_row=start_row,
+                                        end_row=end_row)
+
+
     selected_h_cells = np.array(tbl_headers.row)[list_cols]
 
     # Now that we have the columns we randomly select #evidence_per_table rows
@@ -203,9 +189,60 @@ def sub_relational_table(tbl: WikiTable,
 
     return selected_h_index, selected_h, max_row_header
 
+def _get_cols_with_strategy(key_strategy: str,
+                            rng: np.random.Generator,
+                            tbl: WikiTable,
+                            tbl_headers_len: int,
+                            column_per_table: int,
+                            start_row: int,
+                            end_row: int) -> List[int]:
+    """
+    Uses the chosen strategy to select the columns to generate claims from
+
+    :param key_strategy:
+    :param rng: random numpy generator
+    :param tbl: tbl to which extract the subtable
+    :param tbl_headers_len: length in cells of the header row
+    :param column_per_table: number of columns to be chosen
+    :param start_row: starting row for scoring analysis
+    :param end_row: end row for scoring analysis
+
+    """
+    possible = list(range(tbl_headers_len))
+    # if the number of columns matches the available ones
+    # return all columns
+    if tbl_headers_len <= column_per_table:
+        return possible
+
+    if key_strategy == 'first':
+        list_cols = [possible.pop(0)] + rng.choice(possible,
+                                                   column_per_table - 1,
+                                                   replace=False).tolist()
+    elif key_strategy == 'sensible':
+        # start_row + 1 is passed to skip the header
+        list_cols = [possible.pop(_key_sensible(tbl, tbl_headers_len, start_row + 1, end_row))] \
+                    + rng.choice(possible,
+                                 column_per_table - 1,
+                                 replace=False).tolist()
+
+    elif key_strategy == 'entity':
+        # start_row + 1 is passed to skip the header
+        list_cols = [possible.pop(_key_entity(tbl, tbl_headers_len, start_row + 1, end_row))] \
+                    + rng.choice(possible,
+                                 column_per_table - 1,
+                                 replace=False).tolist()
+
+    elif key_strategy == 'random':
+        # randomly choose the evidence headers in the selected header
+        list_cols = rng.choice(possible,
+                               column_per_table,
+                               replace=False).tolist()
+    else:
+        raise ValueError("Invalid choice of key detection strategy.")
+    return list_cols
 
 def _key_sensible(table: WikiTable,
-                  header: Row,
+                  n_cols: int,
                   start_row: int,
                   end_row: int):
     """
@@ -218,7 +255,6 @@ def _key_sensible(table: WikiTable,
     :param end_row: Row to end analysis at
     """
     table_id = int(table.get_id().split('_')[1])
-    n_cols = len(header)
     # Find candidate columns with all unique values and compute their scores
     candidates_scores = []
     for col in range(n_cols):
@@ -231,6 +267,7 @@ def _key_sensible(table: WikiTable,
                 values.append(table.get_cell(cell_id))
                 if len(types) < 5:
                     types.append(_get_type(table.get_cell(cell_id).content))
+        #TODO: think about removing check on unicity
         if len(set(values)) == len(
                 values):  # If col contains no duplicates appends it to candidates
             col_type = _col_type(types)
@@ -242,7 +279,7 @@ def _key_sensible(table: WikiTable,
 
 # TODO: refactor to avoid duplicating code
 def _key_entity(table: WikiTable,
-                header: Row,
+                n_cols: int,
                 start_row: int,
                 end_row: int):
     """
@@ -257,7 +294,6 @@ def _key_entity(table: WikiTable,
     """
     NER = spacy.load("en_core_web_sm")
     table_id = int(table.get_id().split('_')[1])
-    n_cols = len(header)
     # Find candidate columns with all unique values and compute their scores
     candidates_scores = []
     for col in range(n_cols):
@@ -268,9 +304,9 @@ def _key_entity(table: WikiTable,
             cell_id = f'cell_{table_id}_{row}_{col}'
             if cell_id in table.all_cells:
                 values.append(table.get_cell(cell_id))
-                labels.append(NER(table.get_cell(cell_id).content))
-        if len(set(values)) == len(
-                values):  # If col contains no duplicates appends it to candidates
+                labels += [doc.ent_type_ for doc in NER(table.get_cell(cell_id).content)]
+
+        if len(set(values)) == len(values): # If col contains no duplicates appends it to candidates
             candidates_scores.append(_get_entity_score(col, labels))
     if len(candidates_scores) == 0:  # If no columns are without duplicates defaults to first column
         return 0
@@ -311,10 +347,10 @@ def _get_type_score(col: int,
     if type is str:
         type_mult = 1
     elif type is int:
-        type_mult = 0.5
-    else:  # float
         type_mult = 0.3
-    return 1 / (col + 1) * type_mult
+    else:  # float
+        type_mult = 0.1
+    return type_mult / (col + 1)
 
 
 def _get_entity_score(col: int,
@@ -333,7 +369,7 @@ def _get_entity_score(col: int,
             # Score normalized by number of rows
             score += 1 / n_rows
         elif l in ['LANGUAGE', 'GPE', 'LOC']:
-            score += 0.5 / n_rows
-        elif l in ['CARDINAL', 'DATE', 'MONEY', 'ORDINAL', 'PERCENT', 'QUANTITY', 'TIME']:
             score += 0.3 / n_rows
-    return 1 / (col + 1) * score
+        elif l in ['CARDINAL', 'DATE', 'MONEY', 'ORDINAL', 'PERCENT', 'QUANTITY', 'TIME']:
+            score += 0.1 / n_rows
+    return score / (col + 1)
