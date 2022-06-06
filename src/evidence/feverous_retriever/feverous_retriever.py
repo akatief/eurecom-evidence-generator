@@ -7,7 +7,7 @@ from feverous.utils.wiki_page import WikiPage
 from feverous.utils.wiki_page import WikiTable
 from feverous.utils.wiki_table import Cell
 
-from logger import logger
+from ...logger import logger
 from ..evidence import Evidence
 from ..evidence import EvidencePiece
 from ..evidence_retriever import EvidenceRetriever

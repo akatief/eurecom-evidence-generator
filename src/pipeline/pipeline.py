@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import List, Any
+from typing import List, Any, Union
 
 
 class PipelineElement:
@@ -30,7 +30,7 @@ class ClaimGeneratorPipeline:
     """
 
     def __init__(self,
-                 elements: List[PipelineElement]):
+                 elements: List[Union[PipelineElement,List[PipelineElement]]]):
         self.elements = elements
 
     @abstractmethod

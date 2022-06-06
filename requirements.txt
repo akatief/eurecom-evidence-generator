@@ -33,7 +33,7 @@ scipy==1.5.4
 six==1.16.0
 sklearn==0.0
 spacy==2.3.2
-https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.2.0/en_core_web_sm-2.2.0.tar.gz
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-2.3.0/en_core_web_sm-2.3.0.tar.gz
 srsly==1.0.5
 thinc==7.4.1
 threadpoolctl==3.1.0
