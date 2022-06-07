@@ -78,13 +78,17 @@ class Evidence:
 
     def __init__(self,
                  evidence_pieces: List[EvidencePiece],
-                 label: str):
+                 label: str,
+                 type_table: str):
         """
         :param evidence_pieces: contain the EvidencePieces used in this Evidence
         :param label: Defines the claim as either "SUPPORTS" or "REFUTES"
+        :param type_table: evidence extracted from table ['entity','relational']
+
         """
         self.evidence_pieces = evidence_pieces
         self.label = label
+        self.type_table = type_table
 
     def __str__(self):
         my_string = ''
