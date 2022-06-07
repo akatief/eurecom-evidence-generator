@@ -14,13 +14,13 @@ def relational_table(tbl: WikiTable,
                      evidence_per_table: int,
                      column_per_table: int,
                      key_strategy: str = 'random'
-                     ) -> Tuple[ List[List[Cell]], List[Cell], List[List[Cell]] ]:
+                     ) -> Tuple[List[List[Cell]], List[Cell], List[List[Cell]]]:
     """
     RANDOMLY  extract the evidence from the relational table.
     Example:
-        selected_content = [['Totti', 128], ['Cassano', 103], ...]
-        headers = ['name', 'scored_gol']
-        possible_pieces = [ ['Totti', 'Cassano'], [128, 103]]
+        selected_evidences = [['Totti', 128], ['Cassano', 103], ...]
+        selected_h_cells = ['name', 'scored_gol']
+        alternative_pieces = [ ['Totti', 'Cassano'], [128, 103]]
 
     :param tbl: The table to be scanned
     :param table_len: the len of the table
@@ -30,9 +30,9 @@ def relational_table(tbl: WikiTable,
     :param key_strategy: heuristic for selecting the key column. Can be 'first',
                          'sensible' or None
 
-    :return selected_cells: [ ['Totti', 128], ['Cassano', 103], ...]
+    :return selected_evidences: [ ['Totti', 128], ['Cassano', 103], ...]
     :return selected_h_cells: ['name', 'scored_gol']
-    :return possible_pieces: the swappable cells for each header
+    :return alternative_pieces: the swappable cells for each header
     """
 
     # 0 for first table, 1 for second table, ...
@@ -62,7 +62,6 @@ def relational_table(tbl: WikiTable,
                                         start_row=start_row,
                                         end_row=end_row)
 
-
     selected_h_cells = np.array(tbl_headers.row)[list_cols]
 
     # Now that we have the columns we randomly select #evidence_per_table rows
@@ -82,6 +81,13 @@ def relational_table(tbl: WikiTable,
                                                         tbl_id)
     except KeyError:
         pass  # not raise error because may use it for SUPPORT Evidence
+
+    # remove the rows where at least one of the cell is empty
+    # shape alternative_pieces (num_col, possible_rows)
+    mask = [(p != -1).all() for p in np.array(alternative_pieces).T]
+    possible_rows = possible_rows[mask]
+    if len(possible_rows) == 0:
+        raise TableException(TableExceptionType.NO_ENOUGH_ROW, tbl.page)
 
     # selected rows from subtable possible rows
     list_rows = rng.choice(possible_rows,
@@ -107,7 +113,7 @@ def extract_alternative_pieces(list_cols: List[int],
                                tbl_id: int):
     """
     It extracts the possible cell that may be used for swapping in case of REFUTED claim
-
+    If the context cell is empty, the possible pieces contains -1
     :param list_cols: the list of selected header cell indexes
     :param possible_rows: the indexes of the rows in the subtable
     :param tbl: the analyzed WikiTable
@@ -121,8 +127,11 @@ def extract_alternative_pieces(list_cols: List[int],
 
         column_evidence_pieces = []
         for i in possible_rows:
-            column_evidence_pieces += [tbl.get_cell(f'cell_{tbl_id}_{i}_{j}')]
-
+            piece = tbl.get_cell(f'cell_{tbl_id}_{i}_{j}')
+            if piece.content != "":
+                column_evidence_pieces += [piece]
+            else:
+                column_evidence_pieces += [-1]
         alternative_pieces.append(column_evidence_pieces)
     return alternative_pieces
 
@@ -189,6 +198,7 @@ def sub_relational_table(tbl: WikiTable,
 
     return selected_h_index, selected_h, max_row_header
 
+
 def _get_cols_with_strategy(key_strategy: str,
                             rng: np.random.Generator,
                             tbl: WikiTable,
@@ -220,14 +230,16 @@ def _get_cols_with_strategy(key_strategy: str,
                                                    replace=False).tolist()
     elif key_strategy == 'sensible':
         # start_row + 1 is passed to skip the header
-        list_cols = [possible.pop(_key_sensible(tbl, tbl_headers_len, start_row + 1, end_row))] \
+        list_cols = [possible.pop(
+            _key_sensible(tbl, tbl_headers_len, start_row + 1, end_row))] \
                     + rng.choice(possible,
                                  column_per_table - 1,
                                  replace=False).tolist()
 
     elif key_strategy == 'entity':
         # start_row + 1 is passed to skip the header
-        list_cols = [possible.pop(_key_entity(tbl, tbl_headers_len, start_row + 1, end_row))] \
+        list_cols = [possible.pop(
+            _key_entity(tbl, tbl_headers_len, start_row + 1, end_row))] \
                     + rng.choice(possible,
                                  column_per_table - 1,
                                  replace=False).tolist()
@@ -240,6 +252,7 @@ def _get_cols_with_strategy(key_strategy: str,
     else:
         raise ValueError("Invalid choice of key detection strategy.")
     return list_cols
+
 
 def _key_sensible(table: WikiTable,
                   n_cols: int,
@@ -267,7 +280,7 @@ def _key_sensible(table: WikiTable,
                 values.append(table.get_cell(cell_id))
                 if len(types) < 5:
                     types.append(_get_type(table.get_cell(cell_id).content))
-        #TODO: think about removing check on unicity
+        # TODO: think about removing check on unicity
         if len(set(values)) == len(
                 values):  # If col contains no duplicates appends it to candidates
             col_type = _col_type(types)
@@ -306,7 +319,8 @@ def _key_entity(table: WikiTable,
                 values.append(table.get_cell(cell_id))
                 labels += [doc.ent_type_ for doc in NER(table.get_cell(cell_id).content)]
 
-        if len(set(values)) == len(values): # If col contains no duplicates appends it to candidates
+        if len(set(values)) == len(
+                values):  # If col contains no duplicates appends it to candidates
             candidates_scores.append(_get_entity_score(col, labels))
     if len(candidates_scores) == 0:  # If no columns are without duplicates defaults to first column
         return 0

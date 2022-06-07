@@ -18,6 +18,7 @@ def main(cfg):
     retrievers = [FeverousRetrieverEntropy(p_dataset=cfg.main.data_path,
                                           num_positive=cfg.positive_evidence,
                                           num_negative=cfg.negative_evidence,
+                                          table_type=cfg.table_type,
                                           wrong_cell=cfg.wrong_cell,
                                           table_per_page=cfg.table_per_page,
                                           evidence_per_table=cfg.evidence_per_table,

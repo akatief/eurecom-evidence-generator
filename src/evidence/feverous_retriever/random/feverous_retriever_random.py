@@ -12,18 +12,11 @@ from ..utils import TableExceptionType, TableException
 
 class FeverousRetrieverRandom(FeverousRetriever):
     # TODO: make init with kwargs
-    def __init__(self,
-                 p_dataset: str,
-                 num_positive: int,
-                 num_negative: int,
-                 wrong_cell: int,
-                 table_per_page=1,
-                 evidence_per_table=1,
-                 column_per_table=2,
-                 key_strategy=None,
-                 seed=None,
-                 verbose=False):
-        super().__init__(p_dataset, num_positive, num_negative, wrong_cell,
+    def __init__(self, p_dataset: str, num_positive: int, num_negative: int,
+                 table_type: str, wrong_cell: int, table_per_page=1, evidence_per_table=1,
+                 column_per_table=2, key_strategy=None, seed=None, verbose=False,
+                 ):
+        super().__init__(p_dataset, num_positive, num_negative, table_type, wrong_cell,
                          table_per_page, evidence_per_table, column_per_table, seed,
                          verbose)
         self.key_strategy = key_strategy
@@ -113,16 +106,14 @@ class FeverousRetrieverRandom(FeverousRetriever):
         try:
             # Not header on the left
             if len(header_left) == 0:
-                selected_evidences, selected_h_cells, alternative_pieces = relational_table(tbl,
-                                                                                            table_len,
-                                                                                            self.rng,
-                                                                                            self.evidence_per_table,
-                                                                                            self.column_per_table,
-                                                                                            self.key_strategy
-                                                                                            )
-                if self.verbose:
-                    logger.info(f"Page: {tbl.page} {tbl.get_id()} Selected headers: {[str(cell) for cell in selected_h_cells]}".encode("utf-8"))
-                return selected_evidences, selected_h_cells, alternative_pieces
+                return relational_table(
+                    tbl,
+                    table_len,
+                    self.rng,
+                    self.evidence_per_table,
+                    self.column_per_table,
+                    self.key_strategy
+                )
             else:
                 return entity_table(tbl,
                                     header_left,
