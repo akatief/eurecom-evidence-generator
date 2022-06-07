@@ -43,7 +43,6 @@ def main(cfg):
 
     pipeline = ClaimGeneratorPipeline([retrievers, generators])
 
-    # Right now, FeverousRetriever doesn't support an input table
     claims = pipeline.generate()
 
     json_evidence = TextualClaim.to_json(claims)
