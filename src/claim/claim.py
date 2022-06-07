@@ -84,6 +84,7 @@ class TextualClaim:
             "claim": str(claim),
             "true": true,
             "swapped": swapped,
+            "table": claim.evidence.type_table,
             "expected_challenge": "Augumented",
             "challenge": "Augumented"
         }

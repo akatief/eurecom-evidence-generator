@@ -62,22 +62,23 @@ def check_header_left(tbl: WikiTable
     return header_index, len(rows)
 
 
-def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]]
+def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]],
+                             type_table: str
                              ) -> List[Evidence]:
     """
     It takes as argument the List of EvidencePieces. Each element of the list contains
     the list of evidence pieces extracted from one table.
     It returns the list of Evidence object created from each set of EvidencePieces.
 
+
     :param evidence_from_table: each element is [EvidencePiece] got from the table
+    :param type_table: evidence extracted from table ['entity','relational']
+
     :return positive_evidences: list containing the positive Evidence
     """
     positive_evidences = []
     for evidence_pieces in evidence_from_table:
-        e = Evidence(
-            evidence_pieces,  # List of all the evidence pieces which belong to the e
-            "SUPPORTS",
-        )
+        e = Evidence(evidence_pieces, "SUPPORTS", type_table)
         positive_evidences.append(e)
 
     return positive_evidences
@@ -85,7 +86,8 @@ def create_positive_evidence(evidence_from_table: List[List[EvidencePiece]]
 
 def create_negative_evidence(evidence_from_table: List[List[EvidencePiece]],
                              wrong_cell: int,
-                             rng: np.random.Generator
+                             rng: np.random.Generator,
+                             type_table: str
                              ) -> List[Evidence]:
     """
     It takes as argument the List of EvidencePieces. Each element of the list contains
@@ -94,6 +96,7 @@ def create_negative_evidence(evidence_from_table: List[List[EvidencePiece]],
     :param evidence_from_table: each element is [EvidencePiece] got from the table
     :param wrong_cell: how many cells are swapped to create REFUTED evidences
     :param rng: used to randomly swap the cells
+    :param type_table: evidence extracted from table ['entity','relational']
 
     :return: list of REFUTED Evidences
     """
@@ -133,7 +136,10 @@ def create_negative_evidence(evidence_from_table: List[List[EvidencePiece]],
             selected_cell = None
             for cell in evidence_pieces[p].possible_pieces:
                 # if the selected cell not already present
-                if cell.name != evidence_pieces[p].cell_id and not cell.is_header:
+                # is -1 in the case the cell is empty
+                if cell != -1 \
+                        and cell.name != evidence_pieces[p].cell_id \
+                        and not cell.is_header:
                     # Avoid possibility to randomly select same row/column
                     if tbl_type == 'relational' and cell.row_num not in already_present:
                         selected_cell = cell
@@ -162,10 +168,7 @@ def create_negative_evidence(evidence_from_table: List[List[EvidencePiece]],
 
             evidence_pieces[p] = new_evidence
 
-        e = Evidence(
-            evidence_pieces,  # List of all the evidence pieces which belong to the e
-            "REFUTES",
-        )
+        e = Evidence(evidence_pieces, "REFUTES", type_table)
         negative_evidences.append(e)
 
     return negative_evidences

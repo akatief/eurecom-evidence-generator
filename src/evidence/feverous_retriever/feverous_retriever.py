@@ -30,6 +30,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                  p_dataset: str,
                  num_positive: int,
                  num_negative: int,
+                 table_type: str,
                  wrong_cell: int,
                  table_per_page: int = 1,
                  evidence_per_table: int = 1,
@@ -41,6 +42,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
         :param p_dataset: path of the dataset
         :param num_positive: num of SUPPORTS evidence to generate
         :param num_negative: num of REFUTED evidence to generate
+        :param table_type:which table type you want extract 'entity','relational','both'
         :param wrong_cell: how many cells are swapped to create REFUTED evidences
         :param table_per_page: how many tables per page you want to scan
         :param evidence_per_table: how many Evidences from the same table
@@ -56,6 +58,7 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
         self.num_positive = num_positive
         self.num_negative = num_negative
+        self.table_type = table_type
 
         self.column_per_table = column_per_table
         self.wrong_cell = wrong_cell
@@ -156,8 +159,16 @@ class FeverousRetriever(EvidenceRetriever, ABC):
                 f" Negative Evidences retrieved"
                 f" {len(total_negative_evidences)}/{self.num_negative}"
             )
+            logger.info(f'POSITIVE Evidence retrieved from ENTITY table:'
+                        f'{len([1 for e in total_positive_evidences if e.type_table == "entity"])}')
+            logger.info(f'POSITIVE Evidence retrieved from RELATIONAL table:'
+                        f'{len([1 for e in total_positive_evidences if e.type_table == "relational"])}')
 
-            logger.info(f" Id not used {len(discarded_ids)}/{len(self.ids)}")
+            logger.info(f'NEGATIVE Evidence retrieved from ENTITY table:'
+                        f'{len([1 for e in total_negative_evidences if e.type_table == "entity"])}')
+            logger.info(f'NEGATIVE Evidence retrieved from RELATIONAL table:'
+                        f'{len([1 for e in total_negative_evidences if e.type_table == "relational"])}')
+            logger.info(f"Page Id not used {len(discarded_ids)}/{len(self.ids)}")
 
             logger.info(f' Id error NO_ENOUGH_TBL  {len(discarded_ids["NO_ENOUGH_TBL"])}')
             logger.info(f' Id error NO_EXTRACTED_TBL  '
@@ -202,6 +213,20 @@ class FeverousRetriever(EvidenceRetriever, ABC):
 
             # check if header on the left present
             header_left, table_len = check_header_left(tbl)
+            type_table = 'entity' if len(header_left) > 0 else 'relational'
+
+            if self.table_type == 'relational' and len(header_left) > 0:
+                if self.verbose:
+                    logger.info(
+                        f'Entity table num {tbl.name} in {tbl.page} discarded')
+                continue  # skip entity table
+            if self.table_type == 'entity' and len(header_left) == 0:
+                if self.verbose:
+                    logger.info(
+                        f'Relational table num {tbl.name} in {tbl.page} discarded')
+                continue  # skip relational table
+            if self.table_type == 'both':
+                pass  # accept all tables
 
             # extract the evidence from the table
             try:
@@ -214,14 +239,14 @@ class FeverousRetriever(EvidenceRetriever, ABC):
             else:  # if no exception has occurred
                 count_extracted += 1  # successfully extracted
                 positive_evidences += create_positive_evidence(
-                    deepcopy(evidence_from_table)
-                )
+                    deepcopy(evidence_from_table), type_table)
 
                 try:
                     negative_evidences += create_negative_evidence(
-                        deepcopy(evidence_from_table),  # pass a copy
+                        deepcopy(evidence_from_table),
                         self.wrong_cell,
-                        self.rng)
+                        self.rng,
+                        type_table)
                 except TableException:
                     # if not possible to create negative, continue with other tables
                     pass

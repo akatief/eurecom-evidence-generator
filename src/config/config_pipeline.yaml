@@ -11,6 +11,7 @@ header_content: True
 positive_evidence: 10 # how many Positive Evidences you want to get
 negative_evidence: 10 # How many Negative Evidences you want to get
 
+table_type: 'both' # define from which table type you want extract ['entity', 'relational', 'both']
 column_per_table: 3 # how many cells for 1 Evidence
 wrong_cell: 2 # how many cells are swapped to create Wrong evidences
 
