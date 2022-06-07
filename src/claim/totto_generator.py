@@ -1,5 +1,5 @@
 import tensorflow as tf
-# import tensorflow_text
+import tensorflow_text
 from .claim_generator import TextualClaimGenerator
 
 

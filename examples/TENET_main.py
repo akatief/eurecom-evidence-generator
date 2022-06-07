@@ -1,9 +1,6 @@
 import json
 import hydra
 
-# TODO: try to understand because if it is not used you get error
-import tensorflow_text
-
 from src.claim import TextualClaim
 from src.claim import FeverousGenerator, ToTToGenerator
 
