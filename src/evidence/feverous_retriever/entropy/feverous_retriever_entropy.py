@@ -165,8 +165,7 @@ def _table_to_matrix(table: WikiTable) -> List[List[Union[Cell, None]]]:
     :param table: the table to generate the list from
     :return: a list of lists of cells
     """
-    n_rows = len(table.get_rows())
-    n_cols = max([len(row.get_row_cells()) for row in table.get_rows()])
+    n_rows, n_cols = _table_size(table)
     cells = [[None for c in range(n_cols)] for r in range(n_rows)]
     for cell_id in table.get_ids():
         if 'caption' in cell_id:
@@ -180,12 +179,29 @@ def _table_to_matrix(table: WikiTable) -> List[List[Union[Cell, None]]]:
         cell = table.get_cell(cell_id)
         # Filters out empty cells marking them as None
         if _is_valid_content(cell.content):
-            cells[row][col] = cell
+            try:
+                cells[row][col] = cell
+            except IndexError as e:
+                print('bruh moment')
         else:
-            cells[row][col] = None
+            try:
+                cells[row][col] = None
+            except IndexError as e:
+                print('bruh moment')
 
     return cells
 
+
+def _table_size(table: WikiTable):
+    row_ids = [int(cell_id.split('_')[3]) for cell_id in table.get_ids() if 'header' in cell_id]
+    row_ids += [int(cell_id.split('_')[2]) for cell_id in table.get_ids() if 'header' not in cell_id and 'caption' not in cell_id]
+    n_rows = max(row_ids) + 1
+
+    col_ids = [int(cell_id.split('_')[4]) for cell_id in table.get_ids() if 'header' in cell_id]
+    col_ids += [int(cell_id.split('_')[3]) for cell_id in table.get_ids() if 'header' not in cell_id and 'caption' not in cell_id]
+    n_cols = max(col_ids) + 1
+
+    return n_rows, n_cols
 
 def _split_sub_tables(table: List[List[Union[Cell, None]]]) -> List[List[List[Union[Cell, None]]]]:
     """

@@ -115,6 +115,13 @@ def create_negative_evidence(evidence_from_table: List[List[EvidencePiece]],
             already_present = list(present_rows)
             tbl_type = 'relational'
 
+        # if there are not enough cells to swap throw an exception
+        if len(evidence_pieces) < wrong_cell:
+            raise TableException(
+                TableExceptionType.NO_NEGATIVE_SENT,
+                evidence_pieces[0].wiki_page
+            )
+
         # randomly select which of the cells has to be swapped
         pieces_replace = rng.choice(len(evidence_pieces),
                                     wrong_cell,
