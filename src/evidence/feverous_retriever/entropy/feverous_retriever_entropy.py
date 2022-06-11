@@ -48,9 +48,9 @@ class FeverousRetrieverEntropy(FeverousRetriever):
         try:
             # Not header on the left
             if len(header_left) == 0:
-                output = entropy_relational_table(tbl,self.evidence_per_table, self.column_per_table)
+                output = entropy_relational_table(tbl, self.evidence_per_table, self.column_per_table)
             else:
-                output = entropy_entity_table(tbl, self.column_per_table,self.evidence_per_table)
+                output = entropy_entity_table(tbl, self.evidence_per_table, self.column_per_table)
 
         except TableException:
             raise  # propagate up the TableException
@@ -179,15 +179,9 @@ def _table_to_matrix(table: WikiTable) -> List[List[Union[Cell, None]]]:
         cell = table.get_cell(cell_id)
         # Filters out empty cells marking them as None
         if _is_valid_content(cell.content):
-            try:
-                cells[row][col] = cell
-            except IndexError as e:
-                print('bruh moment')
+            cells[row][col] = cell
         else:
-            try:
-                cells[row][col] = None
-            except IndexError as e:
-                print('bruh moment')
+            cells[row][col] = None
 
     return cells
 
@@ -279,12 +273,14 @@ def _extract_evidences(table_matrix, columns_per_table, column_entropies):
             # List of columns_per_table Cells
             matrix_slice = row[i:i + columns_per_table]
             header_slice = table_matrix[0][i:i + columns_per_table]
-            if None not in matrix_slice and None not in header_slice:
+            alternative_slice = transposed[i:i + columns_per_table]
+            flattened_alt_slice = list(np.concatenate(alternative_slice).flat)
+            if None not in matrix_slice and None not in header_slice and len(flattened_alt_slice) > 0:
                 evidences.append(matrix_slice)
                 entropy_slice = column_entropies[i:i + columns_per_table]
                 entropy_scores.append(sum(entropy_slice))
                 headers.append(header_slice)
-                alternative_slice = transposed[i:i + columns_per_table]
+
                 alternatives.append(alternative_slice)
     return evidences, headers, entropy_scores, alternatives
 
