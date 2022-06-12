@@ -9,10 +9,12 @@ from src.evidence.feverous_retriever.random import FeverousRetrieverRandom
 from src.evidence.feverous_retriever.entropy import FeverousRetrieverEntropy
 
 
+# from src.evidence.feverous_retriever.entropy import FeverousRetrieverEntropy
+
 
 @hydra.main(config_path="../src/config/", config_name="config_pipeline.yaml")
 def main(cfg):
-    retrievers = [FeverousRetrieverEntropy(p_dataset=cfg.main.data_path,
+    retrievers = [FeverousRetrieverRandom(p_dataset=cfg.main.data_path,
                                           num_positive=cfg.positive_evidence,
                                           num_negative=cfg.negative_evidence,
                                           table_type=cfg.table_type,
@@ -21,25 +23,26 @@ def main(cfg):
                                           evidence_per_table=cfg.evidence_per_table,
                                           column_per_table=cfg.column_per_table,
                                           seed=cfg.seed,
-                                          verbose=True
+                                          verbose=True,
+                                          key_strategy=strat
                                           )
                   # for strat in ['entity', 'random']
-                  for strat in ['entity']
+                  for strat in ['random']
                   ]
 
     generator1 = FeverousGenerator(encoding='compact',
-                                   model_path=cfg.main.model_path,)
+                                   model_path=cfg.main.model_path, )
 
-    generator2 = ToTToGenerator(
-    encoding='totto', model_path='../../../../models/exported_totto_large/1648208035'
-    )
+    # generator2 = ToTToGenerator(
+    # encoding='totto', model_path=cfg.main.model_path
+    # )
     # generator3 = ToTToGenerator(encoding='compact',
     #                             model_path=cfg.main.model_path,
     #                             verbose=True)
     # generator = ToTToGenerator(encoding='totto',
     #                            model_path=cfg.main.model_path)
 
-    generators = [generator2]
+    generators = [generator1]
 
     pipeline = ClaimGeneratorPipeline([retrievers, generators])
 

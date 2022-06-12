@@ -1,13 +1,12 @@
 from typing import List, Tuple
+
 import numpy as np
-from feverous.utils.wiki_table import Cell
 from feverous.utils.wiki_page import WikiTable
+from feverous.utils.wiki_table import Cell
 
 from ..utils import TableExceptionType, TableException
 
 
-# TODO: use Cell header_left to get directly id and content
-#  instead of passing a tuple
 def entity_table(
         tbl: WikiTable,
         header_left: List[Cell],
@@ -20,6 +19,8 @@ def entity_table(
     List[List[Cell]]
 ]:
     """
+    Extract the Evidences from the entity table i.e. from the header left
+
     :param tbl: The table to be scanned
     :param header_left: list of header left cells
     :param rng: random generator
@@ -38,8 +39,8 @@ def entity_table(
         raise TableException(TableExceptionType.NO_ENOUGH_ROW, tbl.page)
 
     selected_h = rng.choice(header_left,
-                                  column_per_table,
-                                  replace=False)
+                            column_per_table,
+                            replace=False)
 
     # Now we need to select the cells from the selected headers
     rows = np.array(tbl.get_rows())
@@ -50,6 +51,7 @@ def entity_table(
     extracted_cell = []
     alternative_pieces = []
     for r in selected_rows:
+
         # Obtain first the unique cells form the entity table
         unique_cells = [r.row[0]]  # The first cell is the header
         for c in r.row[1:]:  # take all the other cells of the row
@@ -64,7 +66,10 @@ def entity_table(
         alternative_pieces.append(unique_cells[1:])
 
     alternative_pieces = np.array(alternative_pieces)
+
+    # this masks contains the row that have all the cells to be extractable (no empty,...)
     mask = [(p != -1).all() for p in alternative_pieces.T]
+
     # mantain all the rows but keep only the correct column from which we can
     possible_cols = np.arange(0, alternative_pieces.shape[1])
     possible_cols = possible_cols[mask]  # remove not possible cell

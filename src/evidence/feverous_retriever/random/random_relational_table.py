@@ -2,7 +2,6 @@ from typing import List, Tuple, Any
 import numpy as np
 import spacy
 from feverous.utils.wiki_table import Cell
-from feverous.utils.wiki_table import Row
 from feverous.utils.wiki_page import WikiTable
 from ..utils import TableException
 from ..utils import TableExceptionType
@@ -52,7 +51,6 @@ def relational_table(tbl: WikiTable,
     # Now we have the range of correct rows associated to that specific header
     # from [start_i + 1,  end_i ]
 
-    # TODO: refactor and put strategies in a function
     # randomly choose the evidence headers in the selected header
     list_cols = _get_cols_with_strategy(key_strategy=key_strategy,
                                         rng=rng,
@@ -73,7 +71,7 @@ def relational_table(tbl: WikiTable,
 
     # extract possible cells for generating negative samples
     # may crash if cell_id not in table
-    alternative_pieces = [[] for j in list_cols]
+    alternative_pieces = [[] for _ in list_cols]
     try:
         alternative_pieces = extract_alternative_pieces(list_cols,
                                                         possible_rows,
@@ -82,14 +80,15 @@ def relational_table(tbl: WikiTable,
     except KeyError:
         pass  # not raise error because may use it for SUPPORT Evidence
 
+    # selected rows from subtable possible rows
     # remove the rows where at least one of the cell is empty
     # shape alternative_pieces (num_col, possible_rows)
+    # this masks contains the row that have all the cells to be extractable (no empty,...)
     mask = [(p != -1).all() for p in np.array(alternative_pieces).T]
     possible_rows = possible_rows[mask]
     if len(possible_rows) == 0:
         raise TableException(TableExceptionType.NO_ENOUGH_ROW, tbl.page)
 
-    # selected rows from subtable possible rows
     list_rows = rng.choice(possible_rows,
                            evidence_per_table,
                            replace=False)
@@ -101,7 +100,8 @@ def relational_table(tbl: WikiTable,
             try:
                 evidence += [tbl.get_cell(f'cell_{tbl_id}_{row}_{col}')]
             except KeyError:
-                raise TableException(TableExceptionType.ID_NOT_COMPLIANT, tbl.page)
+                raise TableException(TableExceptionType.ID_NOT_COMPLIANT,
+                                     tbl.page)
         selected_evidences.append(evidence)
 
     return selected_evidences, selected_h_cells, alternative_pieces
@@ -114,6 +114,7 @@ def extract_alternative_pieces(list_cols: List[int],
     """
     It extracts the possible cell that may be used for swapping in case of REFUTED claim
     If the context cell is empty, the possible pieces contains -1
+
     :param list_cols: the list of selected header cell indexes
     :param possible_rows: the indexes of the rows in the subtable
     :param tbl: the analyzed WikiTable
@@ -122,6 +123,7 @@ def extract_alternative_pieces(list_cols: List[int],
     :return: the swappable cells for each header
             possible_pieces = [ ['Totti', 'Cassano'], [128, 103] ]
     """
+    # all_cells = [for cell_id in tbl.all_cells]
     alternative_pieces = []
     for j in list_cols:
 
@@ -132,6 +134,7 @@ def extract_alternative_pieces(list_cols: List[int],
                 column_evidence_pieces += [piece]
             else:
                 column_evidence_pieces += [-1]
+
         alternative_pieces.append(column_evidence_pieces)
     return alternative_pieces
 
