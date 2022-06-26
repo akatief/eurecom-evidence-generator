@@ -1,5 +1,5 @@
-# eurecom-evidence-generator
-Repository for an evidence extraction pipeline from tabular data. Developed as a semester project at EURECOM.
+# TENET: TExtual traiNing Examples from daTa
+Repository for TENET, an evidence extraction pipeline from tabular data. Developed as a semester project at EURECOM under the supervision of Professor Paolo Papotti. TENET implements various heuristics to retrieve data from the FEVEROUS dataset as well as transformer-based tasks to construct meaningful sentences from this data.
 
 ## Setup
 First, create a new virtual environment in the project directory and activate it
