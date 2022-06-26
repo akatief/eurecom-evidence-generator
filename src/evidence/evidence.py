@@ -1,36 +1,52 @@
+from typing import List
+from typing import Union
+from feverous.utils.wiki_table import Cell
 from .utils import clean_content
-from .utils import to_totto_text
-from .utils import to_compact_text
+from .utils import get_context
+
+
 
 
 class EvidencePiece:
     """
-    Contains a single piece of information pertaining to some Evidence.
+    One single Evidence Piece. Multiple evidence pieces create an Evidence.
     """
-
-    # TODO: make it more general, not bound to table structure
     # TODO: add argument comments
-    def __init__(self, wikipage, caption, cell, header_cell):
+    def __init__(self,
+                 wikipage: str,
+                 caption: List,
+                 cell: Cell,
+                 header_cell: Cell,
+                 possible_pieces: List[Cell],
+                 true_piece: Union[None, 'EvidencePiece'] = None):
         """
-        cell id => cell_<table_id>_<row_num>_<column_num>
+        :param wikipage: Name of the wikipage that contains this piece
+        :param caption: contain the title/sections table for the piece
+        :param cell: the extracted cell
+        :param header_cell: the associated header cell
+        :param possible_pieces: the possible pieces to swap for creating negative sentence
+        :param true_piece: None if SUPPORT, The correct EvidencePiece if REFUTES
         """
-        self.wiki_page = wikipage
-        self.cell_id = cell.name
-        self.cell = cell
+        self.true_piece = true_piece  # it contains the ture EvidencePiece if necessary
+        self.possible_pieces = possible_pieces  # Contains the possible rows
+
+        self.wiki_page = wikipage  # the WikiPage name
+        self.cell_id = cell.name  # the id of the cells
+
         # TODO: error because some tables may have more headers on the left
         #  Universal Storage Platform, discontinued
         self.table = int(self.cell_id.split('_')[1])
         self.row = int(self.cell_id.split('_')[2])
         self.column = int(self.cell_id.split('_')[3])
 
-        self.caption = caption
+        # contains the title and the sections of the table
+        self.caption = get_context(caption, wikipage)
 
-        self.header_content = clean_content(header_cell.content)
-        self.header = header_cell
+        self.cell = cell  # The object Cell
+        self.content = clean_content(cell.content)  # The str content
 
-        # Added for the links in the table
-        content = cell.content
-        self.content = clean_content(content)
+        self.header = header_cell  # The cell Header
+        self.header_content = clean_content(header_cell.content)  # the str header content
 
     def __str__(self):
         return f"{self.content} " \
@@ -57,24 +73,22 @@ class EvidencePiece:
 # TODO: add argument comments
 class Evidence:
     """
-    Contains pieces of evidence along with the template giving meaning.
+    It is the Evidence used to generate the sentence
     """
 
     def __init__(self,
-                 evidence_pieces,
-                 column_per_table,
-                 label,
-                 seed):
+                 evidence_pieces: List[EvidencePiece],
+                 label: str,
+                 type_table: str):
         """
-        :param evidence_pieces: List of List of pieces of evidence
-                                columns = sample header from the table
-                                row = total number of evidence
+        :param evidence_pieces: contain the EvidencePieces used in this Evidence
         :param label: Defines the claim as either "SUPPORTS" or "REFUTES"
+        :param type_table: evidence extracted from table ['entity','relational']
+
         """
         self.evidence_pieces = evidence_pieces
-        self.column_per_table = column_per_table
-        self.seed = seed
         self.label = label
+        self.type_table = type_table
 
     def __str__(self):
         my_string = ''
@@ -83,18 +97,85 @@ class Evidence:
 
         return my_string + self.label
 
-    def to_text(self, encoding='compact'):
+    def to_text(self,
+                encoding: str = 'compact'):
         """
         Converts evidence objects into strings the model can elaborate
         to generate a textual claim.
         Uses selected encoding. Possible choices are 'compact' and 'totto'.
 
-        :param encoding:
+        :param encoding: encoding to use
         :return: text encoded in chosen form.
         """
         if encoding == 'compact':
-            return to_compact_text(self.evidence_pieces)
+            return self.to_compact_text()
         elif encoding == 'totto':
-            return to_totto_text(self.evidence_pieces)
+            return self.to_totto_text()
         else:
             raise ValueError('Invalid choice of encoding')
+
+    # TODO: solve circular dependency
+    def to_compact_text(self):
+        """
+        Converts evidence objects into strings the model can elaborate to generate
+         a textual claim
+
+        :return: text encoded in compact form.
+                 eg:
+                 'Washington && City && List of cities
+                 | 7.615 millions && Inhabitants && List of cities '
+        """
+        ep_to_text = lambda ep: ' && '.join([ep.content, ep.wiki_page, ep.header_content])
+        textual_pieces = [ep_to_text(ep) for ep in self.evidence_pieces]
+        return ' | '.join(textual_pieces)
+
+    # TODO: solve circular dependency
+    def to_totto_text(self):
+        """
+        Converts evidence objects into strings
+        the model can elaborate to generate a textual claim
+
+        :return: text encoded in totto form.
+                 eg: <page_title> list of governors of south carolina </page_title>
+                  <section_title> governors under the constitution of 1868 </section_title>
+                  <table> <cell> 76 </cell>
+                  <cell> daniel henry chamberlain </cell>
+                  <cell> december 1, 1874 </cell> </table>
+        """
+        pieces = self.evidence_pieces
+        pieces.sort()
+
+        t_start = '<table> '
+        t_end = ' </table>'
+        r_start = '<row> '
+        r_end = ' </row>'
+        c_start = ' <cell> '
+        c_end = ' </cell>'
+        h_start = ' <col_header> '
+        h_end = ' </col_header> '
+        title = ' <page_title> ' + pieces[0].wiki_page + ' </page_title> '
+
+        # TODO: implement better management for title
+        #  (eg: print every unique title across all EvidencePieces)
+        text = title + t_start + r_start + c_start
+        curr_table = pieces[0].table
+        curr_row = pieces[0].row
+        curr_column = pieces[0].column
+
+        for p in pieces:
+            if p.table != curr_table:
+                text += c_end + r_end + t_end + t_start + r_start + c_start
+                curr_table = p.table
+                curr_row = p.row
+                curr_column = p.column
+            elif p.row != curr_row:
+                text += c_end + r_end + r_start + c_start
+                curr_row = p.row
+                curr_column = p.column
+            elif p.column != curr_column:
+                text += c_end + c_start
+                curr_column = p.column
+            text += p.content + h_start + p.header_content + h_end
+
+        text += c_end + r_end + t_end
+        return text

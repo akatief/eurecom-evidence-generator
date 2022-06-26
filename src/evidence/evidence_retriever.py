@@ -1,6 +1,5 @@
 from abc import abstractmethod
-
-from pipeline import PipelineElement
+from ..pipeline import PipelineElement
 
 
 class EvidenceRetriever(PipelineElement):
@@ -9,11 +8,14 @@ class EvidenceRetriever(PipelineElement):
     """
 
     def __init__(self,
-                 n_pieces):
+                 n_pieces: int,
+                 verbose: bool = False):
         """
         :param n_pieces: Number of pieces of evidence to be returned.
+        :param verbose: if True prints additional debug messages
         """
         self.n_pieces = n_pieces
+        self.verbose = verbose
 
     @abstractmethod
     def retrieve(self):

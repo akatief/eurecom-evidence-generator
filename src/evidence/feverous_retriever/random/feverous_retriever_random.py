@@ -1,118 +1,125 @@
 from typing import List, Tuple
-
-import numpy as np
-from numpy import ndarray
 from feverous.utils.wiki_table import Cell
 from feverous.utils.wiki_page import WikiTable
+from ....logger import logger
 
 from ...evidence import EvidencePiece
 from ..feverous_retriever import FeverousRetriever
-from .random_entity_table import RandomEntityTable
-from .random_relational_table import RandomRelationalTable
+from .random_entity_table import entity_table
+from .random_relational_table import relational_table
 from ..utils import TableExceptionType, TableException
 
 
 class FeverousRetrieverRandom(FeverousRetriever):
+    # TODO: make init with kwargs
+    def __init__(self, p_dataset: str, num_positive: int, num_negative: int,
+                 table_type: str, wrong_cell: int, table_per_page=1, evidence_per_table=1,
+                 column_per_table=2, key_strategy=None, seed=None, verbose=False,
+                 ):
+        super().__init__(p_dataset, num_positive, num_negative, table_type, wrong_cell,
+                         table_per_page, evidence_per_table, column_per_table, seed,
+                         verbose)
+        self.key_strategy = key_strategy
+
     def get_evidence_from_table(self,
                                 tbl: WikiTable,
-                                header_left: List[Tuple[str, int, str]],
-                                table_len: int,
-                                if_header=True,
-                                rng=None) -> ndarray:
+                                header_left: List[Cell],
+                                table_len: int
+                                ) -> List[List[EvidencePiece]]:
         """
-          it is used to extract the "meaningful" attributes from one table at time.
-          "Meaningful" is defined by the target application.
+        extract the EvidencePieces from one table. This functions does not directly
+        compute the Evidence because possible evidence with EvidencePieces coming from
+        different tables.
 
-          Example:
-                evidences = [
-                    [
-                        EvidencePiece('Totti', 'name'),
-                        EvidencePiece(128, 'scored_gol)
-                    ],
-                    [...],
-                    ...
-                ]
+        :param tbl: WikiTable to scan
+        :param header_left: list of left header cells
+        :param table_len: number of rows in the table, scalar
 
-          :param tbl: scanned table WikiTable
-          :param header_left: list of tuple. Each element contains the first left header
-          :param table_len: number of row in the table, scalar
-          :param if_header: add or not add the header in the output Boolean
-          :param rng: random numpy generator
-
-          :return evidences: contains the list of evidences from this table
+        :return: a list of lists of EvidencePiece objects
         """
         # returns multiple Row that are headers
         headers = tbl.get_header_rows()
 
-        # no headers in the table
+        # no headers at all in the table
         if len(headers) == 0 and len(header_left) == 0:
             raise TableException(TableExceptionType.NO_HEADERS, tbl.page)
 
-        if len(headers) != 0 and len(headers[0].row) < self.column_per_table:
+        # not enough columns in the Relational table
+        if len(headers) != 0 and len(headers[0].row) <= self.column_per_table:
+            raise TableException(TableExceptionType.NO_ENOUGH_COL, tbl.page)
+        # not enough columns in the entity table
+        if len(header_left) != 0 and len(header_left) <= self.column_per_table:
             raise TableException(TableExceptionType.NO_ENOUGH_COL, tbl.page)
 
         try:
+            # extract the evidencePieces with the random strategy
             output = self.random_strategy(tbl,
                                           header_left,
-                                          table_len,
-                                          if_header,
-                                          rng)
+                                          table_len)
         except TableException:
-            raise
+            raise  # propagate up the TableException
 
-        selected_cells, selected_h_cells = output
+        selected_cells, selected_h_cells, possible_pieces = output
+
         evidences = []
         for evidence in selected_cells:
             local_evidences = []
-            for i, c in enumerate(evidence):
-                local_evidences.append(EvidencePiece(tbl.page,
-                                                     tbl.caption,
-                                                     c,
-                                                     selected_h_cells[i]))
+            for i, cell in enumerate(evidence):
+                local_evidences.append(
+                    EvidencePiece(tbl.page,
+                                  tbl.caption,
+                                  cell,
+                                  selected_h_cells[i],
+                                  possible_pieces[i]
+                                  )
+                )
+            evidences.append(local_evidences)
 
-            evidences.append(np.array(local_evidences))
-
-        return np.array(evidences)
+        return evidences
 
     def random_strategy(self,
                         tbl: WikiTable,
-                        header_left: List[Tuple[str, int, str]],
+                        header_left: List[Cell],
                         table_len: int,
-                        if_header: bool,
-                        rng: np.random.Generator
-                        ) -> Tuple[List[List[Cell]], List[Cell]]:
+                        ) -> Tuple[
+        List[List[Cell]],
+        List[Cell],
+        List[List[Cell]]
+    ]:
         """
-        It returns the list of evidences extracted from the table.
-        the length of the list depends on "evidence_per_table"
+        The strategy is different depending on the type of table is analyzed.
+        The different strategies are implemented in the utils of the random package.
         Example:
             selected_content = [['Totti', 128], ['Cassano', 103], ...]
             headers = ['name', 'scored_gol']
+            possible_pieces = [ ['Totti', 'Cassano'], [128, 103]]
 
-        :param tbl: one table present in the page
-        :param header_left: list of tuple. Each element contains the first left header
+        :param tbl: the analyzed table
+        :param header_left: list of header left cells
         :param table_len: len of the table
-        :param if_header: to insert or not the header
-        :param rng: random generator for reproducibility
 
-        :return: selected_content, headers
+        :return selected_cells: [ ['Totti', 128], ['Cassano', 103], ...]
+        :return selected_h_cells: ['name', 'scored_gol']
+        :return possible_pieces: the swappable cells for each header
         """
 
         try:
             # Not header on the left
             if len(header_left) == 0:
-                rrl = RandomRelationalTable(self.evidence_per_table,
-                                            self.column_per_table)
-                return rrl.relational_table(tbl,
-                                            table_len,
-                                            rng,
-                                            if_header
-                                            )
+                return relational_table(
+                    tbl,
+                    table_len,
+                    self.rng,
+                    self.evidence_per_table,
+                    self.column_per_table,
+                    self.key_strategy
+                )
             else:
-                ret = RandomEntityTable(self.evidence_per_table, self.column_per_table)
-                return ret.entity_table(tbl,
-                                        header_left,
-                                        rng,
-                                        if_header
-                                        )
+                return entity_table(tbl,
+                                    header_left,
+                                    self.rng,
+                                    self.column_per_table,
+                                    self.evidence_per_table
+                                    )
         except TableException:
             raise

@@ -1,15 +1,22 @@
 main:
-  data_path: ../../../data/filtereddb_st.db
+  data_path: ../../../data/filtereddb_st_2.db
   model_path: ../../../models/t5_4.bin
 
 notebook:
-  data_path: ../examples/data/filtereddb_st.db
-  model_path: ../examples/t5_4.bin
+  data_path: ../../../datasets/filtereddb_st.db
+  model_path: ../../../models/t5_4.bin
 
 header_content: True
-num_evidence: 25 # how many Evidences you want to get
-table_per_page: 1 # how many tables per page you want to scan
-evidence_per_table: 1 # how many Evidences from the same table
-column_per_table: 2 # how many cells for 1 Evidence
-seed: 43 # used for reproducibility
 
+positive_evidence: 10 # how many Positive Evidences you want to get
+negative_evidence: 10 # How many Negative Evidences you want to get
+
+table_type: 'both' # define from which table type you want extract ['entity', 'relational', 'both']
+column_per_table: 3 # how many cells for 1 Evidence
+wrong_cell: 2 # how many cells are swapped to create Wrong evidences
+
+evidence_per_table: 1 # how many Evidences from the same table
+table_per_page: 1 # how many tables per page you want to scan
+
+seed: 23 # used for reproducibility
+verbose: True

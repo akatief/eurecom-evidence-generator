@@ -12,3 +12,5 @@ Then, install all requirements
 pip install -r requirements.txt
 pip install --no-deps feverous
 ```
+## Usage
+You can check that everything works by running examples/pipeline_main.py or alternatively generate your sentences directly on the following Google Colab notebook: [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/akatief/eurecom-evidence-generator/blob/develop/examples/TENET_colab.ipynb)
